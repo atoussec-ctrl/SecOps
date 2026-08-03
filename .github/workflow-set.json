@@ -1,0 +1,74 @@
+{
+  "workflow_set_version": "1.0.0",
+  "workflows": {
+    "pr": {
+      "name": "Pull request",
+      "triggers": {
+        "pull_request": { "branches": ["main"] }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "jobs": {
+        "phase-0-checks": {
+          "name": "Repository checks",
+          "runs_on": "ubuntu-latest",
+          "permissions": {
+            "contents": "read"
+          },
+          "timeout_minutes": 15,
+          "steps": [
+            {
+              "name": "Check out the repository",
+              "kind": "action",
+              "action_ref": "actionsCheckout"
+            },
+            {
+              "name": "Set up the pinned Node runtime",
+              "kind": "action",
+              "action_ref": "actionsSetupNode",
+              "with": {
+                "node-version": "24.18.1"
+              }
+            },
+            {
+              "name": "Verify local toolchains",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:prerequisites"
+            },
+            {
+              "name": "Validate documentation",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:docs"
+            },
+            {
+              "name": "Validate contracts",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:contracts"
+            },
+            {
+              "name": "Enforce module boundaries",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:architecture"
+            },
+            {
+              "name": "Assert lab exposure policy",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:exposure"
+            },
+            {
+              "name": "Assert workflow policy",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:workflows"
+            },
+            {
+              "name": "Run the foundation suite",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:foundation"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
