@@ -12,6 +12,12 @@
 
 import { createHash } from "node:crypto";
 
+// ASCII only, so that sorting by UTF-16 code unit and sorting by code point
+// give the same order. Covers snake_case, kebab-case and dotted keys.
+const CANONICAL_KEY = /^[A-Za-z0-9_.-]+$/;
+
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
 export class CanonicalFormError extends Error {
   constructor(message) {
     super(message);
@@ -47,6 +53,15 @@ function canonicalizeValue(value, location) {
   }
 
   if (typeof value === "string") {
+    // A lone surrogate has no UTF-8 encoding. JavaScript escapes it and Python
+    // would emit bytes that do not round-trip, so the two would disagree on the
+    // digest. It is refused rather than encoded differently in each language.
+    if (LONE_SURROGATE.test(value)) {
+      throw new CanonicalFormError(`${location}: string contains an unpaired surrogate`);
+    }
+
+    // Non-ASCII text is emitted literally, never as \\uXXXX. A Python
+    // implementation must therefore serialize with ensure_ascii disabled.
     return JSON.stringify(value);
   }
 
@@ -59,7 +74,18 @@ function canonicalizeValue(value, location) {
 
   if (isPlainObject(value)) {
     // Object key order is not meaningful, so it is normalized by sorting.
+    // JavaScript sorts by UTF-16 code unit and Python by code point, which
+    // disagree above the basic multilingual plane. Restricting keys to ASCII
+    // removes the divergence instead of relying on it never being reached.
     const keys = Object.keys(value).sort();
+
+    for (const key of keys) {
+      if (!CANONICAL_KEY.test(key)) {
+        throw new CanonicalFormError(
+          `${location}/${key}: an object key must match ${CANONICAL_KEY.source}`,
+        );
+      }
+    }
 
     return `{${keys
       .map((key) => `${JSON.stringify(key)}:${canonicalizeValue(value[key], `${location}/${key}`)}`)

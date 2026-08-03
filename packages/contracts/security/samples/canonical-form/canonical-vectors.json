@@ -127,6 +127,21 @@
       "name": "fractional number nested in a structure",
       "value_json": "{\"budgets\":{\"rate\":0.5}}",
       "reason": "A nested non-integer is rejected exactly like a top-level one."
+    },
+    {
+      "name": "non-ascii object key",
+      "value_json": "{\"caf\\u00e9\":1}",
+      "reason": "Sorting by UTF-16 code unit and by code point disagree above the basic multilingual plane, so keys are restricted to ASCII."
+    },
+    {
+      "name": "object key containing a space",
+      "value_json": "{\"two words\":1}",
+      "reason": "Keys are restricted to letters, digits, underscore, dot and hyphen."
+    },
+    {
+      "name": "unpaired surrogate in a string",
+      "value_json": "\"\\ud800\"",
+      "reason": "A lone surrogate has no UTF-8 encoding, so no two languages agree on its bytes."
     }
   ]
 }

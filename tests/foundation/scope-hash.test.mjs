@@ -51,6 +51,37 @@ test("E1-003 negative zero normalizes", () => {
   assert.equal(canonicalize(0), "0");
 });
 
+// JavaScript sorts keys by UTF-16 code unit and Python by code point. They only
+// disagree above the basic multilingual plane, so ASCII keys remove the hazard.
+test("E1-003 a non-ascii object key is refused", () => {
+  for (const key of ["café", "chave com espaço", "😀", "á"]) {
+    assert.throws(() => canonicalize({ [key]: 1 }), CanonicalFormError, key);
+  }
+});
+
+test("E1-003 the conventional key shapes are accepted", () => {
+  assert.equal(
+    canonicalize({ snake_case: 1, "kebab-case": 2, "dotted.key": 3, Mixed9: 4 }),
+    '{"Mixed9":4,"dotted.key":3,"kebab-case":2,"snake_case":1}',
+  );
+});
+
+// A lone surrogate has no UTF-8 encoding, so the two languages cannot agree.
+test("E1-003 an unpaired surrogate is refused", () => {
+  assert.throws(() => canonicalize("\ud800"), CanonicalFormError);
+  assert.throws(() => canonicalize({ a: "x\udc00y" }), CanonicalFormError);
+  assert.deepEqual(canonicalize("😀"), '"😀"');
+});
+
+// Non-ascii text stays literal, so a Python implementation needs ensure_ascii
+// disabled. If it escaped instead, the digest would differ.
+test("E1-003 non-ascii text is emitted literally, not escaped", () => {
+  const canonical = canonicalize({ note: "café ☕" });
+
+  assert.equal(canonical, '{"note":"café ☕"}');
+  assert.doesNotMatch(canonical, /\\u/);
+});
+
 test("E1-003 a value the form cannot represent is an error", () => {
   for (const value of [1.5, Number.NaN, Number.POSITIVE_INFINITY, 1e30, undefined]) {
     assert.throws(() => canonicalize(value), CanonicalFormError, `${value}`);

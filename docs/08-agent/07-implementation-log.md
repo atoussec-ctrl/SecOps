@@ -96,6 +96,46 @@ When Python arrives, the canonicalizer is tested against the same file. Runtime
 concerns that a static vector cannot express — DNS resolution and pinning,
 answer drift and rebinding, redirect revalidation — remain E1-002.
 
+## Revision — cross-language hazards in the canonical form
+
+### Defect fixed
+
+[ADR-011](../../adrs/011-canonical-scope-serialization.md) claims byte-exact
+agreement between a TypeScript console and a Python orchestrator, and the form
+as first written had two ways to break that claim silently.
+
+**Key ordering.** JavaScript sorts by UTF-16 code unit and Python by code point.
+The two agree across the basic multilingual plane and disagree above it, so a
+key outside the BMP would have produced a different digest in each language with
+nothing reporting a problem. Object keys are now restricted to
+`[A-Za-z0-9_.-]`, which removes the divergence rather than relying on it never
+being reached.
+
+**String escaping.** Non-ASCII text is emitted literally. Python's `json.dumps`
+escapes to `\uXXXX` by default, so an implementation written the obvious way
+would disagree on every scope containing an accented character. The rule is now
+stated in the ADR and in the contract README: serialize with
+`ensure_ascii=False`.
+
+An unpaired surrogate is also refused outright. It has no UTF-8 encoding, so no
+two languages agree on its bytes.
+
+### Why this mattered
+
+Neither hazard would have surfaced as a failure. Both produce a digest that is
+merely different, and a scope whose digest does not verify reads as tampering.
+The failure would have appeared during Phase 1 integration as an authorization
+boundary that intermittently refuses valid scopes.
+
+### Verification
+
+Existing digests are unchanged, so the hardening is backward compatible and both
+sample scopes still verify. Three rejected vectors were added to the conformance
+file so a second implementation is held to the same rules.
+
+`node tools/repo.mjs check:all` — 7 checks, 242 tests, exit 0.
+`tools/scope-hash.mjs` is at 100% line, branch and function coverage.
+
 ## Revision — review pass over Phase 0
 
 ### Defect fixed
