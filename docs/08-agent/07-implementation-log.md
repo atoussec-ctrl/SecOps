@@ -4,6 +4,54 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-013 — Domain event contracts (preparation)
+
+Status: **partial**. Depends on: E1-008. Phase 1.
+
+### Changed files
+
+- `packages/contracts/events/event-envelope.schema.json`
+- `packages/contracts/events/event-catalog.schema.json`
+- `packages/contracts/events/samples/**`, `packages/contracts/events/README.md`
+- `tests/foundation/event-contracts.test.mjs`
+
+### What the shape enforces
+
+Three rules from
+[event contracts](../07-data-api/04-event-contracts.md) became structural rather
+than advisory.
+
+A version is part of the type: `event_type` must end in `.vN`, so removing or
+redefining a field means publishing a new type instead of silently breaking a
+consumer. Deduplication and ordering are required fields: `event_id` is the
+idempotency key and `aggregate_version` gives per-aggregate order.
+
+Most usefully, a payload cannot carry evidence. Payload fields are declared by
+name and type, and the type vocabulary has no free-text or binary member. An
+event that wanted to carry a request body or a token has no way to express it,
+which is stronger than a rule saying it must not.
+
+### Cross-checks
+
+The envelope and the catalog are separate documents, so the tests check they
+agree: every producer and aggregate type in the catalog must be expressible in
+the envelope, and every catalogued type must match the envelope's pattern. The
+catalog is asserted to carry exactly the fourteen mandatory events the
+specification lists. No event may be consumed by its own producer, which would
+feed the relay back into the service that emitted it.
+
+### Tests executed
+
+`node tools/repo.mjs check:all` — 7 checks, 271 tests, exit 0.
+
+### Known limitations and remaining risk
+
+- The outbox, relay, delivery records and poison queue need Python and
+  PostgreSQL. This is the contract both sides publish and consume against, not
+  the mechanism.
+- Payload fields are declared but not individually validated at ingestion. That
+  belongs with the relay.
+
 ## E1-010 — Canonical finding model and lifecycle (preparation)
 
 Status: **partial**. Depends on: E1-008. Phase 1.

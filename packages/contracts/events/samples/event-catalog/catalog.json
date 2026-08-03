@@ -1,0 +1,174 @@
+{
+  "catalog_version": "1.0.0",
+  "events": [
+    {
+      "event_type": "engagement.activated.v1",
+      "producer": "orchestrator",
+      "consumers": ["console", "audit"],
+      "aggregate_type": "engagement",
+      "description": "An engagement became active after its scope and private environment were verified.",
+      "payload_fields": [
+        { "name": "engagement_id", "type": "identifier", "required": true },
+        { "name": "scope_hash", "type": "digest", "required": true },
+        { "name": "activated_at", "type": "timestamp", "required": true }
+      ]
+    },
+    {
+      "event_type": "engagement.stopped.v1",
+      "producer": "orchestrator",
+      "consumers": ["console", "reporting", "audit"],
+      "aggregate_type": "engagement",
+      "description": "An engagement stopped, either on completion or through a stop condition.",
+      "payload_fields": [
+        { "name": "engagement_id", "type": "identifier", "required": true },
+        { "name": "reason", "type": "enum_value", "required": true },
+        { "name": "stopped_at", "type": "timestamp", "required": true }
+      ]
+    },
+    {
+      "event_type": "run.started.v1",
+      "producer": "orchestrator",
+      "consumers": ["console", "metrics"],
+      "aggregate_type": "run",
+      "description": "A run started against a scoped target with an issued execution grant.",
+      "payload_fields": [
+        { "name": "run_id", "type": "identifier", "required": true },
+        { "name": "engagement_id", "type": "identifier", "required": true },
+        { "name": "adapter_id", "type": "identifier", "required": true },
+        { "name": "profile", "type": "enum_value", "required": true }
+      ]
+    },
+    {
+      "event_type": "run.budget_warning.v1",
+      "producer": "orchestrator",
+      "consumers": ["console", "alerting"],
+      "aggregate_type": "run",
+      "description": "A run approached one of its declared budgets and the operator should know before it is cancelled.",
+      "payload_fields": [
+        { "name": "run_id", "type": "identifier", "required": true },
+        { "name": "budget", "type": "enum_value", "required": true },
+        { "name": "used_percent", "type": "integer", "required": true }
+      ]
+    },
+    {
+      "event_type": "run.cancelled.v1",
+      "producer": "orchestrator",
+      "consumers": ["console", "ingestion"],
+      "aggregate_type": "run",
+      "description": "A run was cancelled by an operator, a budget or the kill switch.",
+      "payload_fields": [
+        { "name": "run_id", "type": "identifier", "required": true },
+        { "name": "reason", "type": "enum_value", "required": true },
+        { "name": "cancelled_at", "type": "timestamp", "required": true }
+      ]
+    },
+    {
+      "event_type": "run.completed.v1",
+      "producer": "orchestrator",
+      "consumers": ["finding-hub", "console"],
+      "aggregate_type": "run",
+      "description": "A run finished and its results are ready to ingest. Completion still requires an ingestion receipt.",
+      "payload_fields": [
+        { "name": "run_id", "type": "identifier", "required": true },
+        { "name": "result_digest", "type": "digest", "required": true },
+        { "name": "result_count", "type": "integer", "required": true }
+      ]
+    },
+    {
+      "event_type": "ingestion.accepted.v1",
+      "producer": "finding-hub",
+      "consumers": ["orchestrator", "gate"],
+      "aggregate_type": "run",
+      "description": "Results were durably ingested. This receipt is what allows a run to be marked complete.",
+      "payload_fields": [
+        { "name": "run_id", "type": "identifier", "required": true },
+        { "name": "receipt", "type": "digest", "required": true },
+        { "name": "occurrence_count", "type": "integer", "required": true }
+      ]
+    },
+    {
+      "event_type": "finding.created.v1",
+      "producer": "finding-hub",
+      "consumers": ["console", "metrics"],
+      "aggregate_type": "finding",
+      "description": "A new canonical finding was raised because no existing fingerprint matched.",
+      "payload_fields": [
+        { "name": "finding_id", "type": "identifier", "required": true },
+        { "name": "fingerprint", "type": "digest", "required": true },
+        { "name": "asset_id", "type": "identifier", "required": true }
+      ]
+    },
+    {
+      "event_type": "finding.confirmed.v1",
+      "producer": "finding-hub",
+      "consumers": ["gate", "reporting"],
+      "aggregate_type": "finding",
+      "description": "A reviewer confirmed a finding with the full evidence set, so gates may act on it.",
+      "payload_fields": [
+        { "name": "finding_id", "type": "identifier", "required": true },
+        { "name": "primary_cwe", "type": "label", "required": true },
+        { "name": "priority", "type": "enum_value", "required": true },
+        { "name": "confirmed_by", "type": "identifier", "required": true }
+      ]
+    },
+    {
+      "event_type": "remediation.submitted.v1",
+      "producer": "finding-hub",
+      "consumers": ["retest-queue"],
+      "aggregate_type": "remediation",
+      "description": "A candidate fix was submitted and awaits a passing pipeline before retest.",
+      "payload_fields": [
+        { "name": "finding_id", "type": "identifier", "required": true },
+        { "name": "change_reference", "type": "label", "required": true }
+      ]
+    },
+    {
+      "event_type": "retest.completed.v1",
+      "producer": "finding-hub",
+      "consumers": ["console", "reporting", "gate"],
+      "aggregate_type": "retest",
+      "description": "An independent retest ran against a named artifact and either verified or reopened the finding.",
+      "payload_fields": [
+        { "name": "finding_id", "type": "identifier", "required": true },
+        { "name": "artifact_digest", "type": "digest", "required": true },
+        { "name": "original_proof_succeeds", "type": "boolean", "required": true }
+      ]
+    },
+    {
+      "event_type": "risk_acceptance.expiring.v1",
+      "producer": "finding-hub",
+      "consumers": ["alerting", "risk-owner"],
+      "aggregate_type": "risk_acceptance",
+      "description": "An accepted risk is approaching expiry and returns to confirmed unless it is renewed.",
+      "payload_fields": [
+        { "name": "finding_id", "type": "identifier", "required": true },
+        { "name": "owner", "type": "identifier", "required": true },
+        { "name": "expires_at", "type": "timestamp", "required": true }
+      ]
+    },
+    {
+      "event_type": "report.generated.v1",
+      "producer": "report-generator",
+      "consumers": ["console", "audit"],
+      "aggregate_type": "report",
+      "description": "A report was rendered from a finding snapshot and its integrity digest recorded.",
+      "payload_fields": [
+        { "name": "report_id", "type": "identifier", "required": true },
+        { "name": "engagement_id", "type": "identifier", "required": true },
+        { "name": "report_digest", "type": "digest", "required": true }
+      ]
+    },
+    {
+      "event_type": "artifact.approved.v1",
+      "producer": "delivery-pipeline",
+      "consumers": ["signer"],
+      "aggregate_type": "artifact",
+      "description": "A secure artifact passed every gate and may be signed. Only the approved digest is eligible.",
+      "payload_fields": [
+        { "name": "artifact_digest", "type": "digest", "required": true },
+        { "name": "gate_decision_id", "type": "identifier", "required": true },
+        { "name": "approved_by", "type": "identifier", "required": true }
+      ]
+    }
+  ]
+}
