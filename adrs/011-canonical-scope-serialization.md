@@ -23,12 +23,21 @@ The digest is computed over a canonical form defined in
 The form is narrower than JSON on purpose:
 
 - object keys are sorted, so input order cannot change the digest;
+- object keys are restricted to `[A-Za-z0-9_.-]`. JavaScript sorts by UTF-16
+  code unit and Python by code point, and the two disagree above the basic
+  multilingual plane. Restricting keys to ASCII removes that divergence instead
+  of relying on it never being reached;
 - array order is preserved, because order is meaningful in a scope;
 - there is no insignificant whitespace;
 - only integers are representable. Floating point has no single textual form
   across languages, and a scope record has no use for one, so a non-integer
   number is an error rather than a value that encodes differently in Python;
-- negative zero normalizes to zero.
+- negative zero normalizes to zero;
+- non-ASCII text in a string value is emitted literally, never as `\uXXXX`. A
+  Python implementation must therefore serialize with `ensure_ascii=False`,
+  because the default would escape and produce a different digest;
+- a string containing an unpaired surrogate is refused. It has no UTF-8
+  encoding, so no two languages agree on its bytes.
 
 `approval.scope_hash` is removed before hashing, since the digest cannot cover
 the field that carries it. Everything else in the record is covered.
