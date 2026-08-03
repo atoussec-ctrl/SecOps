@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/infra/lab-topology.schema.json",
+  "title": "Lab Topology",
+  "description": "Private lab topology descriptor. The Compose file is rendered from this document, so the safety invariants of docs/02-architecture/04-runtime-deployment.md are enforced on a validated structure instead of on hand-written YAML. Privileged mode, host networking and bind mounts have no representation here, so they cannot be expressed at all.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["topology_version", "project_name", "networks", "services"],
+  "properties": {
+    "topology_version": { "$ref": "#/$defs/semantic_version" },
+    "project_name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,30}$" },
+    "networks": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/network" }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/service" }
+    }
+  },
+  "$defs": {
+    "semantic_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["internal", "purpose"],
+      "properties": {
+        "internal": {
+          "type": "boolean",
+          "description": "An internal network has no route off the host. Only an ingress network may be false, and only loopback publishing is permitted on it."
+        },
+        "purpose": { "type": "string", "minLength": 10, "maxLength": 200 }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "image_ref", "networks", "published_ports", "runtime"],
+      "properties": {
+        "role": {
+          "enum": [
+            "console",
+            "control-plane",
+            "service",
+            "datastore",
+            "target-insecure",
+            "target-secure"
+          ]
+        },
+        "image_ref": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9]{1,40}$",
+          "description": "Identifier of a version-manifest entry. Images are never written here, so a topology cannot pin an unreviewed image."
+        },
+        "networks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,30}$" }
+        },
+        "published_ports": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/published_port" }
+        },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,30}$" }
+        },
+        "runtime": { "$ref": "#/$defs/runtime" }
+      }
+    },
+    "published_port": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host_ip", "host_port", "container_port"],
+      "properties": {
+        "host_ip": {
+          "enum": ["127.0.0.1", "::1"],
+          "description": "Loopback only. A wildcard bind address cannot be written."
+        },
+        "host_port": { "$ref": "#/$defs/port" },
+        "container_port": { "$ref": "#/$defs/port" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Container hardening is mandatory, so the permissive value of each control is not representable.",
+      "required": [
+        "read_only",
+        "no_new_privileges",
+        "user",
+        "cap_drop",
+        "memory_limit_mb",
+        "cpu_limit",
+        "pids_limit"
+      ],
+      "properties": {
+        "read_only": { "const": true },
+        "no_new_privileges": { "const": true },
+        "user": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{3,5}:[1-9][0-9]{3,5}$",
+          "description": "Numeric non-root user and group."
+        },
+        "cap_drop": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "ALL" }
+        },
+        "memory_limit_mb": { "type": "integer", "minimum": 64, "maximum": 4096 },
+        "cpu_limit": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
+        "pids_limit": { "type": "integer", "minimum": 16, "maximum": 512 }
+      }
+    }
+  }
+}

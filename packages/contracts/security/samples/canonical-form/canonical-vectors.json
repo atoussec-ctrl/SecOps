@@ -1,0 +1,132 @@
+{
+  "form_version": "1.0.0",
+  "description": "Conformance vectors for the canonical form used to hash a scope record. Every implementation must produce the same canonical string and digest for each value.",
+  "vectors": [
+    {
+      "name": "empty object",
+      "value": {},
+      "canonical": "{}",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "empty array",
+      "value": [],
+      "canonical": "[]",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "object keys are sorted",
+      "value": {
+        "b": 1,
+        "a": 2,
+        "C": 3
+      },
+      "canonical": "{\"C\":3,\"a\":2,\"b\":1}",
+      "sha256": "27e01c26743085bff8e4a98d76dca93ebdb6c805f8136fae1216ee257d33f5c5"
+    },
+    {
+      "name": "nested objects are sorted at every level",
+      "value": {
+        "z": {
+          "b": 1,
+          "a": 2
+        },
+        "a": [
+          {
+            "y": 1,
+            "x": 2
+          }
+        ]
+      },
+      "canonical": "{\"a\":[{\"x\":2,\"y\":1}],\"z\":{\"a\":2,\"b\":1}}",
+      "sha256": "9e321cc139fde4601e38027e1b7c22dc5bf0146e2377b4fe297cae64ff2ace8c"
+    },
+    {
+      "name": "array order is preserved",
+      "value": [
+        3,
+        1,
+        2
+      ],
+      "canonical": "[3,1,2]",
+      "sha256": "51bda7ab4e44726cde71fcb6e4b515357059bb6b6dd5146d1fc50f73f11678c6"
+    },
+    {
+      "name": "every scalar type",
+      "value": {
+        "s": "x",
+        "n": 42,
+        "neg": -7,
+        "t": true,
+        "f": false,
+        "nothing": null
+      },
+      "canonical": "{\"f\":false,\"n\":42,\"neg\":-7,\"nothing\":null,\"s\":\"x\",\"t\":true}",
+      "sha256": "b5df5480df8281c59c98c610c92b9b5b598b98dbae2b22bd2e99707d0e8ec14c"
+    },
+    {
+      "name": "string escaping",
+      "value": {
+        "s": "quote \" backslash \\ newline \n tab \t"
+      },
+      "canonical": "{\"s\":\"quote \\\" backslash \\\\ newline \\n tab \\t\"}",
+      "sha256": "7a475e86b9a0007817692d7e8a99d392c802c5dc79e02aca62f655502e50ce14"
+    },
+    {
+      "name": "non-ascii text is preserved",
+      "value": {
+        "s": "café ☕ ação"
+      },
+      "canonical": "{\"s\":\"café ☕ ação\"}",
+      "sha256": "7701e3c2b542a626729b2eef969074cc585e1ae359b3377b4dae32f70d2bda1b"
+    },
+    {
+      "name": "negative zero normalizes to zero",
+      "value": {
+        "n": 0
+      },
+      "canonical": "{\"n\":0}",
+      "sha256": "f3013f933b9fb80ab6d995e7ad9da36f683837ba1d81e950c943d40111eac2f0"
+    },
+    {
+      "name": "deeply mixed structure",
+      "value": {
+        "a": [
+          1,
+          {
+            "b": [
+              true,
+              null,
+              "x"
+            ]
+          }
+        ],
+        "z": {}
+      },
+      "canonical": "{\"a\":[1,{\"b\":[true,null,\"x\"]}],\"z\":{}}",
+      "sha256": "13675e71240abf17e0627dff1d453ebff23ba817106f267f56e77820737f8d8c"
+    }
+  ],
+  "rejected": [
+    {
+      "name": "fractional number",
+      "value_json": "1.5",
+      "reason": "Floating point has no single textual form across languages."
+    },
+    {
+      "name": "number outside the safe integer range",
+      "value_json": "1e30",
+      "reason": "Cannot round-trip exactly through a 64-bit float."
+    },
+    {
+      "name": "overflowing exponent",
+      "value_json": "1e999",
+      "reason": "Parses to infinity, which is not an integer."
+    },
+    {
+      "name": "fractional number nested in a structure",
+      "value_json": "{\"budgets\":{\"rate\":0.5}}",
+      "reason": "A nested non-integer is rejected exactly like a top-level one."
+    }
+  ]
+}

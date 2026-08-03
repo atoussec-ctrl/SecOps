@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/address-policy.schema.json",
+  "title": "Address Policy Vectors",
+  "description": "Language-neutral conformance vectors for target canonicalization and the special-range policy (backlog E1-001). The orchestrator is Python and the scope contract is JSON Schema, so the two must agree on what a private target is. These vectors are the shared definition both implementations are tested against.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policy_version", "description", "vectors"],
+  "properties": {
+    "policy_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "description": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/vector" }
+    }
+  },
+  "$defs": {
+    "vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "kind", "classification", "in_scope_eligible", "rationale"],
+      "properties": {
+        "input": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The literal an operator or adapter might supply, including forms that are not valid addresses."
+        },
+        "kind": { "enum": ["ipv4", "ipv4-cidr", "hostname", "url"] },
+        "classification": {
+          "enum": [
+            "loopback",
+            "private",
+            "reserved-domain",
+            "public",
+            "link-local",
+            "multicast",
+            "broadcast",
+            "unspecified",
+            "malformed"
+          ]
+        },
+        "in_scope_eligible": {
+          "type": "boolean",
+          "description": "Whether the value may appear in a scope record at all. Eligibility is necessary, never sufficient: a target must also be listed in the signed scope."
+        },
+        "rationale": { "type": "string", "minLength": 5, "maxLength": 200 }
+      }
+    }
+  }
+}

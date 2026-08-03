@@ -1,0 +1,231 @@
+{
+  "manifestVersion": 1,
+  "activePhase": 0,
+  "policy": "docs/00-overview/07-assumptions-version-policy.md",
+  "selectionRule": "An entry is either pinned to an exact version or explicitly unselected with the backlog task that must decide it. A prerequisite required by the active phase may never stay unselected. Ranges are not permitted.",
+  "entries": {
+    "node": {
+      "category": "runtime",
+      "purpose": "JavaScript runtime for the repository task interface, Console, report generator and test suites.",
+      "requiredFromPhase": 0,
+      "status": "pinned",
+      "version": "24.18.1",
+      "verifiedOn": "2026-08-03",
+      "note": "Active LTS line. Verified locally with `node --version`."
+    },
+    "npm": {
+      "category": "package-manager",
+      "purpose": "Node package manager and workspace lockfile owner.",
+      "requiredFromPhase": 0,
+      "status": "pinned",
+      "version": "11.16.0",
+      "verifiedOn": "2026-08-03",
+      "note": "Ships with the pinned Node release. Verified locally with `npm --version`."
+    },
+    "containerRuntime": {
+      "category": "runtime",
+      "purpose": "Container runtime for the private lab topology and pinned tool images.",
+      "requiredFromPhase": 0,
+      "status": "pinned",
+      "version": "29.6.2",
+      "verifiedOn": "2026-08-03",
+      "note": "Docker Engine with Compose available. Verified locally with `docker --version`."
+    },
+    "nodeImage": {
+      "category": "image",
+      "purpose": "Container base image for the Console, report generator and Web lab targets.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-014",
+      "reason": "A container image is pinned by immutable sha256 digest, not by the host runtime version. Selecting it needs registry access to resolve the digest for the chosen base image."
+    },
+    "pythonImage": {
+      "category": "image",
+      "purpose": "Container base image for the orchestrator and Finding Hub.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-001",
+      "reason": "Pinned by immutable sha256 digest once the Python runtime and package manager are chosen."
+    },
+    "javaImage": {
+      "category": "image",
+      "purpose": "Container base image for the Java API lab.",
+      "requiredFromPhase": 3,
+      "status": "unselected",
+      "blockedBy": "E3-001",
+      "reason": "Pinned by immutable sha256 digest once the Java LTS release is chosen."
+    },
+    "typescript": {
+      "category": "language",
+      "purpose": "Typed implementation language for Console, report generator and shared packages.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-014",
+      "reason": "No TypeScript module exists yet. Pin the current maintained release when the first module is bootstrapped, together with its compiler and lint toolchain."
+    },
+    "python": {
+      "category": "runtime",
+      "purpose": "Orchestrator and Finding Hub runtime.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-001",
+      "reason": "Not installed on the development workstation. The `python` entry currently on PATH is a Microsoft Store stub that reports no version and must not be accepted."
+    },
+    "pythonPackageManager": {
+      "category": "package-manager",
+      "purpose": "Python dependency resolution and hashed lock format.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-001",
+      "reason": "Selected together with the Python runtime because the lock format must support per-artifact hashes (docs/05-devsecops/04-static-supply-chain.md). Choice may warrant a short ADR."
+    },
+    "postgresql": {
+      "category": "service",
+      "purpose": "Finding Hub and lab target datastore, run as a pinned container image.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-008",
+      "reason": "Runs only as a container image, so it needs an image digest rather than a host binary version. Pin the digest with the Compose topology."
+    },
+    "react": {
+      "category": "framework",
+      "purpose": "Console and Web lab user interface framework.",
+      "requiredFromPhase": 1,
+      "status": "unselected",
+      "blockedBy": "E1-014",
+      "reason": "Pinned with the first TypeScript application, after confirming compatibility with the selected analyzers."
+    },
+    "java": {
+      "category": "runtime",
+      "purpose": "Java API lab runtime.",
+      "requiredFromPhase": 3,
+      "status": "unselected",
+      "blockedBy": "E3-001",
+      "reason": "Not installed on the development workstation. Requires a maintained LTS release compatible with the selected Spring Boot line."
+    },
+    "javaBuildTool": {
+      "category": "package-manager",
+      "purpose": "Java build, dependency locking and verification.",
+      "requiredFromPhase": 3,
+      "status": "unselected",
+      "blockedBy": "E3-001",
+      "reason": "Gradle or Maven, chosen for dependency locking and signature verification support."
+    },
+    "springBoot": {
+      "category": "framework",
+      "purpose": "Java API lab application framework.",
+      "requiredFromPhase": 3,
+      "status": "unselected",
+      "blockedBy": "E3-001",
+      "reason": "Pinned with the Java runtime so the supported-version matrix holds."
+    },
+    "reactNative": {
+      "category": "framework",
+      "purpose": "Mobile lab bare workspace.",
+      "requiredFromPhase": 4,
+      "status": "unselected",
+      "blockedBy": "E4-001",
+      "reason": "Pinned with the native toolchains it must match."
+    },
+    "androidGradlePlugin": {
+      "category": "framework",
+      "purpose": "Android build plugin for the Mobile lab targets.",
+      "requiredFromPhase": 4,
+      "status": "unselected",
+      "blockedBy": "E4-001",
+      "reason": "Constrained by the selected Gradle and Android SDK versions."
+    },
+    "androidSdk": {
+      "category": "toolchain",
+      "purpose": "Android compile and target SDK levels.",
+      "requiredFromPhase": 4,
+      "status": "unselected",
+      "blockedBy": "E4-001",
+      "reason": "Compile and target levels are chosen when the Android target is bootstrapped."
+    },
+    "xcode": {
+      "category": "toolchain",
+      "purpose": "iOS build and test toolchain.",
+      "requiredFromPhase": 4,
+      "status": "unselected",
+      "blockedBy": "E4-004",
+      "reason": "Requires a macOS host, which is not the current development workstation."
+    },
+    "swift": {
+      "category": "language",
+      "purpose": "iOS platform-specific secure capability adapters.",
+      "requiredFromPhase": 4,
+      "status": "unselected",
+      "blockedBy": "E4-004",
+      "reason": "Determined by the selected Xcode release."
+    },
+    "codeql": {
+      "category": "scanner",
+      "purpose": "Data-flow static analysis.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-001",
+      "reason": "Needs a version and image digest, plus a decision on local versus hosted execution and approved data flows."
+    },
+    "semgrep": {
+      "category": "scanner",
+      "purpose": "Pattern static analysis and custom rule packs.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-001",
+      "reason": "Needs a version and image digest. Rule packs are versioned with the repository."
+    },
+    "gitleaks": {
+      "category": "scanner",
+      "purpose": "Committed secret detection.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-003",
+      "reason": "Needs a version and image digest."
+    },
+    "trivy": {
+      "category": "scanner",
+      "purpose": "Dependency, container and infrastructure-as-code scanning.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-003",
+      "reason": "Needs a version, image digest and an advisory feed provenance and freshness policy."
+    },
+    "sbomGenerator": {
+      "category": "supply-chain",
+      "purpose": "CycloneDX or SPDX SBOM generation for final artifacts.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-004",
+      "reason": "Chosen with the SBOM format decision and pinned by digest."
+    },
+    "signer": {
+      "category": "supply-chain",
+      "purpose": "Release signing of approved secure artifact digests.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-007",
+      "reason": "Blocked by the unresolved signing trust fallback in docs/08-agent/08-specification-conflicts.md, entry 6."
+    },
+    "provenanceGenerator": {
+      "category": "supply-chain",
+      "purpose": "SLSA or in-toto compatible build provenance.",
+      "requiredFromPhase": 5,
+      "status": "unselected",
+      "blockedBy": "E5-007",
+      "reason": "Blocked by the unresolved provenance timing conflict in docs/08-agent/08-specification-conflicts.md, entry 5."
+    }
+  },
+  "actions": {
+    "actionsCheckout": {
+      "status": "unselected",
+      "blockedBy": "E0-007",
+      "reason": "Third-party actions are pinned to an immutable commit SHA, never a tag. Resolving the SHA for the chosen release needs network access to the action repository."
+    },
+    "actionsSetupNode": {
+      "status": "unselected",
+      "blockedBy": "E0-007",
+      "reason": "Pinned to an immutable commit SHA once the checkout action is pinned and the pair is reviewed together."
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "security-lab",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OWASP and PenTest Security Lab: polyglot monorepo root and task interface.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": "24.18.1",
+    "npm": "11.16.0"
+  },
+  "scripts": {
+    "repo": "node tools/repo.mjs",
+    "check:foundation": "node tools/repo.mjs check:foundation",
+    "check:prerequisites": "node tools/repo.mjs check:prerequisites"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "scope_version": "1.0.0",
+  "engagement_id": "ENG-2026-0002",
+  "purpose": "Bounded active assessment of the Java API lab on the isolated host-only lab network.",
+  "owner": {
+    "name": "Lab Operator",
+    "contact": "operator@security-lab.invalid"
+  },
+  "approval": {
+    "approver": "Lab Reviewer",
+    "approved_at": "2026-08-03T08:30:00Z",
+    "reference": "local-approval/ENG-2026-0002",
+    "scope_hash": "76ee2f7de6e4b26da0aac92b04cb524aa0249b67ff80c3f33ea3ef47e5f50ac8"
+  },
+  "validity": {
+    "start": "2026-08-03T09:00:00Z",
+    "end": "2026-08-04T09:00:00Z",
+    "timezone": "UTC"
+  },
+  "targets": {
+    "applications": ["api-java-lab"],
+    "hostnames": ["api.lab.test"],
+    "ipv4": ["192.168.56.10"],
+    "cidrs": ["192.168.56.0/24"],
+    "urls": ["https://api.lab.test:8443/api"],
+    "ports": [8443],
+    "api_versions": ["v1", "v2"]
+  },
+  "exclusions": {
+    "hostnames": ["metrics.lab.test"],
+    "ipv4": ["192.168.56.1"],
+    "cidrs": [],
+    "paths": ["/actuator", "/internal"]
+  },
+  "allowed_profiles": ["passive", "bounded-active"],
+  "budgets": {
+    "max_requests_per_second": 10,
+    "max_concurrency": 4,
+    "max_duration_seconds": 1800,
+    "max_response_bytes": 2097152,
+    "max_test_records": 25
+  },
+  "accounts": [
+    {
+      "username": "synthetic.analyst",
+      "role": "customer"
+    },
+    {
+      "username": "synthetic.auditor",
+      "role": "auditor"
+    }
+  ],
+  "data_handling": {
+    "synthetic_data_only": true,
+    "evidence_retention_days": 14,
+    "redaction_policy": "redact-secrets-and-identifiers-v1"
+  },
+  "stop": {
+    "contacts": [
+      {
+        "name": "Lab Operator",
+        "method": "operator@security-lab.invalid"
+      }
+    ],
+    "procedure": "Activate the kill switch, tear down the engagement network, then notify the named contact."
+  }
+}

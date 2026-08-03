@@ -1,0 +1,148 @@
+{
+  "topology_version": "1.0.0",
+  "project_name": "seclab",
+  "networks": {
+    "seclab-ingress": {
+      "internal": false,
+      "purpose": "Loopback ingress for the console and control API only. No lab target may attach."
+    },
+    "seclab-control": {
+      "internal": true,
+      "purpose": "Control plane to finding hub and its database. No route off the host."
+    },
+    "seclab-engagement": {
+      "internal": true,
+      "purpose": "Engagement network carrying lab targets and their fixtures. No route off the host."
+    }
+  },
+  "services": {
+    "console": {
+      "role": "console",
+      "image_ref": "nodeImage",
+      "networks": ["seclab-ingress"],
+      "published_ports": [
+        { "host_ip": "127.0.0.1", "host_port": 8080, "container_port": 8080 }
+      ],
+      "depends_on": ["control-plane"],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 512,
+        "cpu_limit": "0.50",
+        "pids_limit": 128
+      }
+    },
+    "control-plane": {
+      "role": "control-plane",
+      "image_ref": "pythonImage",
+      "networks": ["seclab-ingress", "seclab-control", "seclab-engagement"],
+      "published_ports": [
+        { "host_ip": "127.0.0.1", "host_port": 8081, "container_port": 8081 }
+      ],
+      "depends_on": ["finding-hub"],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 1024,
+        "cpu_limit": "1.00",
+        "pids_limit": 256
+      }
+    },
+    "finding-hub": {
+      "role": "service",
+      "image_ref": "pythonImage",
+      "networks": ["seclab-control"],
+      "published_ports": [],
+      "depends_on": ["finding-db"],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 1024,
+        "cpu_limit": "1.00",
+        "pids_limit": 256
+      }
+    },
+    "finding-db": {
+      "role": "datastore",
+      "image_ref": "postgresql",
+      "networks": ["seclab-control"],
+      "published_ports": [],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10002:10002",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 1024,
+        "cpu_limit": "1.00",
+        "pids_limit": 256
+      }
+    },
+    "web-lab-insecure": {
+      "role": "target-insecure",
+      "image_ref": "nodeImage",
+      "networks": ["seclab-engagement"],
+      "published_ports": [],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 512,
+        "cpu_limit": "0.50",
+        "pids_limit": 128
+      }
+    },
+    "web-lab-secure": {
+      "role": "target-secure",
+      "image_ref": "nodeImage",
+      "networks": ["seclab-engagement"],
+      "published_ports": [],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 512,
+        "cpu_limit": "0.50",
+        "pids_limit": 128
+      }
+    },
+    "api-java-lab": {
+      "role": "target-secure",
+      "image_ref": "javaImage",
+      "networks": ["seclab-engagement"],
+      "published_ports": [],
+      "depends_on": ["target-db"],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10001:10001",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 2048,
+        "cpu_limit": "1.00",
+        "pids_limit": 256
+      }
+    },
+    "target-db": {
+      "role": "datastore",
+      "image_ref": "postgresql",
+      "networks": ["seclab-engagement"],
+      "published_ports": [],
+      "runtime": {
+        "read_only": true,
+        "no_new_privileges": true,
+        "user": "10002:10002",
+        "cap_drop": ["ALL"],
+        "memory_limit_mb": 1024,
+        "cpu_limit": "1.00",
+        "pids_limit": 256
+      }
+    }
+  }
+}

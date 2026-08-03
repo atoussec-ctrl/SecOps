@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/canonical-form.schema.json",
+  "title": "Canonical Form Vectors",
+  "description": "Conformance vectors for the canonical serialization a scope digest is computed over (backlog E1-003). A scope is approved once and referenced by digest afterwards, so the approving side and the runtime side must agree byte for byte across languages.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["form_version", "description", "vectors", "rejected"],
+  "properties": {
+    "form_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "description": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/accepted" }
+    },
+    "rejected": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/rejected" }
+    }
+  },
+  "$defs": {
+    "accepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value", "canonical", "sha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "value": {
+          "description": "Any value the canonical form accepts, so no type constraint applies here."
+        },
+        "canonical": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "rejected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value_json", "reason"],
+      "properties": {
+        "name": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "value_json": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "JSON text rather than a JSON value: an overflowing exponent cannot survive a round trip through a value, because it serializes to null."
+        },
+        "reason": { "type": "string", "minLength": 5, "maxLength": 200 }
+      }
+    }
+  }
+}

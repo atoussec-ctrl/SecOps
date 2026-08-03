@@ -1,0 +1,279 @@
+{
+  "policy_version": "1.0.0",
+  "description": "Conformance vectors for the special-range policy. Every implementation that decides whether a target may enter a scope record must agree with this table.",
+  "vectors": [
+    {
+      "input": "127.0.0.1",
+      "kind": "ipv4",
+      "classification": "loopback",
+      "in_scope_eligible": true,
+      "rationale": "Loopback is the default lab binding."
+    },
+    {
+      "input": "127.255.255.254",
+      "kind": "ipv4",
+      "classification": "loopback",
+      "in_scope_eligible": true,
+      "rationale": "The whole 127.0.0.0/8 block is loopback."
+    },
+    {
+      "input": "10.0.0.1",
+      "kind": "ipv4",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "RFC 1918 10.0.0.0/8."
+    },
+    {
+      "input": "172.16.0.1",
+      "kind": "ipv4",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "RFC 1918 172.16.0.0/12 lower bound."
+    },
+    {
+      "input": "172.31.255.254",
+      "kind": "ipv4",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "RFC 1918 172.16.0.0/12 upper bound."
+    },
+    {
+      "input": "172.15.0.1",
+      "kind": "ipv4",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Below the RFC 1918 172.16.0.0/12 block."
+    },
+    {
+      "input": "172.32.0.1",
+      "kind": "ipv4",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Above the RFC 1918 172.16.0.0/12 block."
+    },
+    {
+      "input": "192.168.56.10",
+      "kind": "ipv4",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "RFC 1918 192.168.0.0/16."
+    },
+    {
+      "input": "192.169.0.1",
+      "kind": "ipv4",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Adjacent to but outside 192.168.0.0/16."
+    },
+    {
+      "input": "8.8.8.8",
+      "kind": "ipv4",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Public resolver; scanning the Internet is prohibited."
+    },
+    {
+      "input": "93.184.216.34",
+      "kind": "ipv4",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Public unicast address."
+    },
+    {
+      "input": "169.254.169.254",
+      "kind": "ipv4",
+      "classification": "link-local",
+      "in_scope_eligible": false,
+      "rationale": "Cloud metadata endpoint; denied independently of scope."
+    },
+    {
+      "input": "169.254.1.1",
+      "kind": "ipv4",
+      "classification": "link-local",
+      "in_scope_eligible": false,
+      "rationale": "RFC 3927 link-local block."
+    },
+    {
+      "input": "0.0.0.0",
+      "kind": "ipv4",
+      "classification": "unspecified",
+      "in_scope_eligible": false,
+      "rationale": "Wildcard address; never a target and never a bind address."
+    },
+    {
+      "input": "255.255.255.255",
+      "kind": "ipv4",
+      "classification": "broadcast",
+      "in_scope_eligible": false,
+      "rationale": "Limited broadcast."
+    },
+    {
+      "input": "224.0.0.1",
+      "kind": "ipv4",
+      "classification": "multicast",
+      "in_scope_eligible": false,
+      "rationale": "Multicast is out of scope outside an isolated profile."
+    },
+    {
+      "input": "127.000.000.001",
+      "kind": "ipv4",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Zero-padded octets are ambiguous and may be read as octal."
+    },
+    {
+      "input": "2130706433",
+      "kind": "ipv4",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Decimal form of 127.0.0.1; only dotted quad is accepted."
+    },
+    {
+      "input": "0x7f.0.0.1",
+      "kind": "ipv4",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Hexadecimal octet form of loopback."
+    },
+    {
+      "input": "127.0.0.1 ",
+      "kind": "ipv4",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Trailing whitespace; the literal must be exact."
+    },
+    {
+      "input": "127.0.0.256",
+      "kind": "ipv4",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Octet out of range."
+    },
+    {
+      "input": "10.0.0.0/8",
+      "kind": "ipv4-cidr",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "RFC 1918 block with a valid prefix length."
+    },
+    {
+      "input": "192.168.56.0/24",
+      "kind": "ipv4-cidr",
+      "classification": "private",
+      "in_scope_eligible": true,
+      "rationale": "Host-only lab network."
+    },
+    {
+      "input": "0.0.0.0/0",
+      "kind": "ipv4-cidr",
+      "classification": "unspecified",
+      "in_scope_eligible": false,
+      "rationale": "Every address; the widest possible scope error."
+    },
+    {
+      "input": "8.8.8.0/24",
+      "kind": "ipv4-cidr",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Public block."
+    },
+    {
+      "input": "192.168.0.0/7",
+      "kind": "ipv4-cidr",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Prefix shorter than the policy minimum of 8."
+    },
+    {
+      "input": "localhost",
+      "kind": "hostname",
+      "classification": "loopback",
+      "in_scope_eligible": true,
+      "rationale": "Resolves to loopback on a lab host."
+    },
+    {
+      "input": "web.lab.test",
+      "kind": "hostname",
+      "classification": "reserved-domain",
+      "in_scope_eligible": true,
+      "rationale": "RFC 2606 reserved .test domain."
+    },
+    {
+      "input": "api.lab.example",
+      "kind": "hostname",
+      "classification": "reserved-domain",
+      "in_scope_eligible": true,
+      "rationale": "RFC 2606 reserved .example domain."
+    },
+    {
+      "input": "host.invalid",
+      "kind": "hostname",
+      "classification": "reserved-domain",
+      "in_scope_eligible": true,
+      "rationale": "RFC 2606 reserved .invalid domain."
+    },
+    {
+      "input": "example.com",
+      "kind": "hostname",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Public domain outside the reserved set."
+    },
+    {
+      "input": "localhost.example.com.",
+      "kind": "hostname",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "A public name that merely begins with localhost."
+    },
+    {
+      "input": "http://localhost:8081/",
+      "kind": "url",
+      "classification": "loopback",
+      "in_scope_eligible": true,
+      "rationale": "Loopback lab target over http."
+    },
+    {
+      "input": "https://api.lab.test:8443/api",
+      "kind": "url",
+      "classification": "reserved-domain",
+      "in_scope_eligible": true,
+      "rationale": "Reserved domain over https with an explicit port."
+    },
+    {
+      "input": "https://example.com/",
+      "kind": "url",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Public host."
+    },
+    {
+      "input": "ftp://localhost/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Only http and https are permitted schemes."
+    },
+    {
+      "input": "file:///etc/passwd",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Non-network scheme."
+    },
+    {
+      "input": "http://user@localhost/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "URL userinfo is ambiguous about the real host."
+    },
+    {
+      "input": "http://localhost@example.com/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Userinfo disguising a public host as loopback."
+    }
+  ]
+}
