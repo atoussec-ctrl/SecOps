@@ -1,0 +1,63 @@
+{
+  "scope_version": "1.0.0",
+  "engagement_id": "ENG-2026-0001",
+  "purpose": "Loopback-only assessment of the insecure Web lab target for the authorization scenario set.",
+  "owner": {
+    "name": "Lab Operator",
+    "contact": "operator@security-lab.invalid"
+  },
+  "approval": {
+    "approver": "Lab Operator",
+    "approved_at": "2026-08-03T09:00:00Z",
+    "reference": "local-approval/ENG-2026-0001",
+    "scope_hash": "1fe9e54833eb602eb1579c635edfb41b8b27b674a484d10114bf942e36aa8932"
+  },
+  "validity": {
+    "start": "2026-08-03T09:00:00Z",
+    "end": "2026-08-03T17:00:00Z",
+    "timezone": "UTC"
+  },
+  "targets": {
+    "applications": ["web-lab-insecure"],
+    "hostnames": ["localhost"],
+    "ipv4": ["127.0.0.1"],
+    "cidrs": [],
+    "urls": ["http://localhost:8081/"],
+    "ports": [8081],
+    "api_versions": ["v1"]
+  },
+  "exclusions": {
+    "hostnames": [],
+    "ipv4": [],
+    "cidrs": [],
+    "paths": ["/admin/reset"]
+  },
+  "allowed_profiles": ["passive"],
+  "budgets": {
+    "max_requests_per_second": 5,
+    "max_concurrency": 2,
+    "max_duration_seconds": 300,
+    "max_response_bytes": 1048576,
+    "max_test_records": 10
+  },
+  "accounts": [
+    {
+      "username": "synthetic.analyst",
+      "role": "customer"
+    }
+  ],
+  "data_handling": {
+    "synthetic_data_only": true,
+    "evidence_retention_days": 30,
+    "redaction_policy": "redact-secrets-and-identifiers-v1"
+  },
+  "stop": {
+    "contacts": [
+      {
+        "name": "Lab Operator",
+        "method": "operator@security-lab.invalid"
+      }
+    ],
+    "procedure": "Activate the kill switch, block adapter and target traffic, then notify the named contact."
+  }
+}
