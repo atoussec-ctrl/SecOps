@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/findings/finding.schema.json",
+  "title": "Canonical Finding",
+  "description": "The tool-neutral security record (backlog E1-010). Raw tool records are occurrences; this aggregate owns weakness identity, state, risk signals, remediation and retest. Severity signals and the priority decision are kept apart on purpose, so no single opaque score replaces the inputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "fingerprint",
+    "title",
+    "description",
+    "state",
+    "confidence",
+    "affected",
+    "occurrence_ids",
+    "mappings",
+    "audit"
+  ],
+  "properties": {
+    "finding_id": { "$ref": "#/$defs/identifier" },
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm_version", "value"],
+      "description": "Versioned so a new algorithm never mutates historical identity without a recorded migration.",
+      "properties": {
+        "algorithm_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "title": { "type": "string", "minLength": 10, "maxLength": 200 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 4000 },
+    "root_cause": { "type": "string", "minLength": 10, "maxLength": 2000 },
+    "impact": { "type": "string", "minLength": 10, "maxLength": 2000 },
+    "state": {
+      "enum": [
+        "new",
+        "triaged",
+        "confirmed",
+        "false-positive",
+        "remediating",
+        "risk-accepted",
+        "ready-for-retest",
+        "verified",
+        "reopened"
+      ]
+    },
+    "owner": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "confidence": { "enum": ["low", "medium", "high"] },
+    "priority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "rationale", "decided_by"],
+      "properties": {
+        "level": { "enum": ["P0", "P1", "P2", "P3"] },
+        "rationale": { "type": "string", "minLength": 10, "maxLength": 1000 },
+        "decided_by": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "risk_signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Displayed separately. Never collapsed into one score.",
+      "properties": {
+        "cvss_v4_vector": {
+          "type": "string",
+          "pattern": "^CVSS:4[.]0/[A-Z:/]{10,200}$"
+        },
+        "exploit_evidence": { "enum": ["demonstrated", "kev", "public-reference", "none"] },
+        "epss_percentile": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "reachability": { "enum": ["internal-only", "lab-network", "not-reachable"] },
+        "asset_criticality": { "enum": ["low", "medium", "high"] },
+        "control_effectiveness": { "enum": ["none", "partial", "effective"] }
+      }
+    },
+    "affected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_ids"],
+      "properties": {
+        "asset_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "components": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    },
+    "occurrence_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "evidence_ids": {
+      "type": "array",
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" },
+      "description": "References to redacted evidence. Bytes are never inlined here."
+    },
+    "mappings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_cwe"],
+      "properties": {
+        "primary_cwe": {
+          "type": "string",
+          "pattern": "^(CWE-[0-9]{1,5}|unavailable)$",
+          "description": "A confirmed finding carries a primary CWE or the documented reason it is unavailable."
+        },
+        "primary_cwe_unavailable_reason": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "owasp": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 50 }
+        },
+        "verification": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 50 }
+        }
+      }
+    },
+    "remediation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction"],
+      "properties": {
+        "direction": { "type": "string", "minLength": 10, "maxLength": 1000 },
+        "change_reference": { "type": "string", "maxLength": 200 },
+        "regression_test_reference": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "retest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["performed_by", "performed_at", "artifact_digest", "original_proof_succeeds"],
+      "properties": {
+        "performed_by": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "performed_at": { "$ref": "#/$defs/timestamp" },
+        "artifact_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "original_proof_succeeds": {
+          "type": "boolean",
+          "description": "Verified requires this to be false against the named artifact."
+        }
+      }
+    },
+    "risk_acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "rationale", "expires_at", "approved_by"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "rationale": { "type": "string", "minLength": 10, "maxLength": 1000 },
+        "compensating_controls": { "type": "string", "maxLength": 1000 },
+        "expires_at": { "$ref": "#/$defs/timestamp" },
+        "approved_by": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "audit": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "description": "Append-only record of every state change, with actor, time and reason.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "actor", "to_state", "reason"],
+        "properties": {
+          "at": { "$ref": "#/$defs/timestamp" },
+          "actor": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "from_state": { "type": "string", "minLength": 1, "maxLength": 30 },
+          "to_state": { "type": "string", "minLength": 1, "maxLength": 30 },
+          "reason": { "type": "string", "minLength": 5, "maxLength": 500 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})$"
+    }
+  }
+}

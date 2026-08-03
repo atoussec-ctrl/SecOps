@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/findings/occurrence.schema.json",
+  "title": "Normalized Occurrence",
+  "description": "A single tool result after normalization (backlog E1-010). SARIF is an interchange format, not the domain model: a result becomes an occurrence, and occurrences are grouped into canonical findings. Every field a tool supplies is recorded as a source signal, never as a decision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "occurrence_id",
+    "ingestion_receipt",
+    "source",
+    "asset",
+    "location",
+    "message",
+    "source_severity",
+    "fingerprint_inputs",
+    "raw_result_digest",
+    "first_observed_at",
+    "last_observed_at"
+  ],
+  "properties": {
+    "occurrence_id": { "$ref": "#/$defs/identifier" },
+    "ingestion_receipt": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Acknowledgement that the result was durably ingested. A run cannot complete without one."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "run_id", "tool_name", "tool_version", "rule_id"],
+      "properties": {
+        "format": {
+          "enum": ["sarif", "internal"],
+          "description": "SARIF maps run to run provenance, tool.driver to tool identity and result to this occurrence."
+        },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "adapter_id": { "$ref": "#/$defs/identifier" },
+        "tool_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "tool_version": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "rule_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "rule_family": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id", "kind"],
+      "properties": {
+        "asset_id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["repository", "web-target", "api-target", "mobile-target", "container-image", "package"] },
+        "artifact_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "The exact tested artifact. A retest against a different digest does not close a finding."
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "description": "Normalized from SARIF locations. Repository paths are contained; an external file or network reference is rejected at ingestion.",
+      "properties": {
+        "kind": { "enum": ["source-file", "http-operation", "component", "configuration"] },
+        "path": {
+          "type": "string",
+          "maxLength": 400,
+          "pattern": "^[^\\\\]*$",
+          "description": "Repository-relative and forward-slashed. A leading slash or a parent segment is rejected by policy."
+        },
+        "start_line": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "operation": { "type": "string", "maxLength": 200 },
+        "parameter": { "type": "string", "maxLength": 200 },
+        "component": { "type": "string", "maxLength": 200 },
+        "package_url": { "type": "string", "maxLength": 400 }
+      }
+    },
+    "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "context": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "Bounded excerpt. Rendered escaped and never executed."
+    },
+    "source_severity": {
+      "enum": ["none", "note", "warning", "error"],
+      "description": "The tool's level. A source signal, never the final priority."
+    },
+    "source_confidence": { "enum": ["low", "medium", "high"] },
+    "fingerprint_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy"],
+      "description": "Inputs to the canonical fingerprint, in the preference order of the Finding Hub specification.",
+      "properties": {
+        "strategy": {
+          "enum": [
+            "repository-rule-location",
+            "asset-operation-weakness",
+            "artifact-package-vulnerability",
+            "tool-fingerprint"
+          ]
+        },
+        "tool_fingerprint": { "type": "string", "maxLength": 200 },
+        "normalized_key": { "type": "string", "maxLength": 400 }
+      }
+    },
+    "mappings": { "$ref": "#/$defs/mappings" },
+    "references": {
+      "type": "array",
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": { "type": "string", "maxLength": 400 }
+    },
+    "raw_result_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of the raw document held in quarantined content-addressed storage."
+    },
+    "first_observed_at": { "$ref": "#/$defs/timestamp" },
+    "last_observed_at": { "$ref": "#/$defs/timestamp" }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "mappings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cwe": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^CWE-[0-9]{1,5}$" }
+        },
+        "owasp": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 50 }
+        },
+        "cve": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$" }
+        },
+        "verification": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 50 }
+        }
+      }
+    }
+  }
+}

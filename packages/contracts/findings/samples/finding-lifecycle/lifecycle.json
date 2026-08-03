@@ -1,0 +1,153 @@
+{
+  "lifecycle_version": "1.0.0",
+  "initial_state": "new",
+  "states": [
+    {
+      "state": "new",
+      "description": "An ingested observation that no reviewer has assessed yet.",
+      "terminal": false
+    },
+    {
+      "state": "triaged",
+      "description": "A reviewer has assessed reproducibility, scope and duplication.",
+      "terminal": false
+    },
+    {
+      "state": "confirmed",
+      "description": "A real control failure with reproducible conditions, root cause and impact.",
+      "terminal": false
+    },
+    {
+      "state": "false-positive",
+      "description": "Not a control failure. Reopened only when new evidence appears.",
+      "terminal": true
+    },
+    {
+      "state": "remediating",
+      "description": "A remediation addressing the root cause is in progress.",
+      "terminal": false
+    },
+    {
+      "state": "risk-accepted",
+      "description": "Accepted by a named owner with compensating controls and a future expiry.",
+      "terminal": false
+    },
+    {
+      "state": "ready-for-retest",
+      "description": "A candidate fix is merged and the pipeline passed; awaiting independent retest.",
+      "terminal": false
+    },
+    {
+      "state": "verified",
+      "description": "An independent retest against a named artifact shows the original proof no longer succeeds.",
+      "terminal": true
+    },
+    {
+      "state": "reopened",
+      "description": "A retest failed or a regression reintroduced the weakness.",
+      "terminal": false
+    }
+  ],
+  "transitions": [
+    {
+      "from": "new",
+      "to": "triaged",
+      "role": ["security-reviewer"],
+      "requires": ["scoped-asset", "reviewer-identity"],
+      "rationale": "Triage begins once a reviewer confirms the asset is in scope."
+    },
+    {
+      "from": "triaged",
+      "to": "confirmed",
+      "role": ["security-reviewer"],
+      "requires": [
+        "scoped-asset",
+        "affected-component",
+        "reproducible-conditions",
+        "redacted-evidence",
+        "technical-impact",
+        "root-cause",
+        "confidence",
+        "primary-cwe-or-reason",
+        "remediation-direction",
+        "reviewer-identity"
+      ],
+      "rationale": "Confirmation carries the full evidence set the Finding Hub specification demands."
+    },
+    {
+      "from": "triaged",
+      "to": "false-positive",
+      "role": ["security-reviewer"],
+      "requires": ["rationale", "reviewer-identity"],
+      "rationale": "Dismissal is a recorded decision, not a silent deletion."
+    },
+    {
+      "from": "false-positive",
+      "to": "triaged",
+      "role": ["security-reviewer", "tester"],
+      "requires": ["redacted-evidence", "reviewer-identity"],
+      "rationale": "New evidence reopens a dismissed observation for assessment."
+    },
+    {
+      "from": "confirmed",
+      "to": "remediating",
+      "role": ["developer"],
+      "requires": ["remediation-direction"],
+      "rationale": "Work starts against a stated root-cause direction."
+    },
+    {
+      "from": "confirmed",
+      "to": "risk-accepted",
+      "role": ["risk-owner"],
+      "requires": ["risk-owner", "rationale", "future-expiry"],
+      "rationale": "Acceptance needs a named owner and an expiry; a safety-boundary failure can never be accepted."
+    },
+    {
+      "from": "risk-accepted",
+      "to": "confirmed",
+      "role": ["security-reviewer", "risk-owner"],
+      "requires": ["rationale"],
+      "rationale": "An acceptance that expires or is revoked returns the finding to confirmed."
+    },
+    {
+      "from": "remediating",
+      "to": "ready-for-retest",
+      "role": ["developer"],
+      "requires": ["remediation-reference", "passing-pipeline"],
+      "rationale": "A candidate fix is only ready once its pipeline passes."
+    },
+    {
+      "from": "ready-for-retest",
+      "to": "verified",
+      "role": ["independent-reviewer"],
+      "requires": [
+        "independent-retest",
+        "candidate-artifact-digest",
+        "redacted-evidence",
+        "reviewer-identity"
+      ],
+      "rationale": "Closure requires an independent retest against the exact tested artifact."
+    },
+    {
+      "from": "ready-for-retest",
+      "to": "reopened",
+      "role": ["independent-reviewer"],
+      "requires": ["independent-retest", "redacted-evidence", "reviewer-identity"],
+      "rationale": "A retest that still reproduces the weakness reopens the finding."
+    },
+    {
+      "from": "verified",
+      "to": "reopened",
+      "role": ["independent-reviewer", "tester"],
+      "requires": ["redacted-evidence", "reviewer-identity"],
+      "rationale": "A regression reintroducing the weakness reopens a verified finding."
+    },
+    {
+      "from": "reopened",
+      "to": "remediating",
+      "role": ["developer"],
+      "requires": ["remediation-direction"],
+      "rationale": "A reopened finding returns to remediation rather than to triage."
+    }
+  ]
+}
