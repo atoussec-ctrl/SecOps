@@ -4,6 +4,120 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-013 — Domain event contracts (preparation)
+
+Status: **partial**. Depends on: E1-008. Phase 1.
+
+### Changed files
+
+- `packages/contracts/events/event-envelope.schema.json`
+- `packages/contracts/events/event-catalog.schema.json`
+- `packages/contracts/events/samples/**`, `packages/contracts/events/README.md`
+- `tests/foundation/event-contracts.test.mjs`
+
+### What the shape enforces
+
+Three rules from
+[event contracts](../07-data-api/04-event-contracts.md) became structural rather
+than advisory.
+
+A version is part of the type: `event_type` must end in `.vN`, so removing or
+redefining a field means publishing a new type instead of silently breaking a
+consumer. Deduplication and ordering are required fields: `event_id` is the
+idempotency key and `aggregate_version` gives per-aggregate order.
+
+Most usefully, a payload cannot carry evidence. Payload fields are declared by
+name and type, and the type vocabulary has no free-text or binary member. An
+event that wanted to carry a request body or a token has no way to express it,
+which is stronger than a rule saying it must not.
+
+### Cross-checks
+
+The envelope and the catalog are separate documents, so the tests check they
+agree: every producer and aggregate type in the catalog must be expressible in
+the envelope, and every catalogued type must match the envelope's pattern. The
+catalog is asserted to carry exactly the fourteen mandatory events the
+specification lists. No event may be consumed by its own producer, which would
+feed the relay back into the service that emitted it.
+
+### Tests executed
+
+`node tools/repo.mjs check:all` — 7 checks, 271 tests, exit 0.
+
+### Known limitations and remaining risk
+
+- The outbox, relay, delivery records and poison queue need Python and
+  PostgreSQL. This is the contract both sides publish and consume against, not
+  the mechanism.
+- Payload fields are declared but not individually validated at ingestion. That
+  belongs with the relay.
+
+## E1-010 — Canonical finding model and lifecycle (preparation)
+
+Status: **partial**. Depends on: E1-008. Phase 1.
+
+### Changed files
+
+- `packages/contracts/findings/occurrence.schema.json`
+- `packages/contracts/findings/finding.schema.json`
+- `packages/contracts/findings/finding-lifecycle.schema.json`
+- `packages/contracts/findings/samples/**`, `packages/contracts/findings/README.md`
+- `tests/foundation/finding-model.test.mjs`
+
+### What is delivered
+
+The canonical model existed only as prose and a state diagram. It is now three
+contracts with a worked example: one Semgrep occurrence raised, confirmed,
+remediated and verified.
+
+Occurrence and finding are separate because SARIF is an interchange format, not
+the domain model. The occurrence carries what a tool observed; the finding owns
+identity, state and human decisions. That separation is what lets a scanner be
+replaced without touching the workflow, and it is why `source_severity` sits on
+the occurrence while `priority` sits on the finding with a rationale and a named
+decider. Collapsing them is what
+[vulnerability management](../04-security/07-vulnerability-management.md)
+forbids, so the finding schema has no `severity` field at all and a test asserts
+its absence.
+
+The lifecycle is a contract rather than a diagram because the Finding Hub is
+Python and the console is TypeScript, and both need the same answer to whether a
+transition is allowed, who may perform it and what must exist first.
+
+### Cross-checks rather than schema validation alone
+
+Validation would let the state machine and the record drift apart, so the tests
+tie them together: the two state sets must be identical, every transition must
+name declared states, every state must be reachable from `new`, and every
+non-terminal state must have an exit so a finding cannot strand.
+
+The confirmation transition is asserted to demand exactly the ten evidence items
+the [Finding Hub specification](../03-applications/05-finding-hub-spec.md)
+lists, so weakening confirmation means changing a test that cites the source.
+The sample's audit trail is asserted to be a legal path through the lifecycle,
+chronological, and to end in the state the record claims.
+
+### Correction made during implementation
+
+The first sample finding carried a 65-character fingerprint. The contract check
+caught it before the tests did, which is the intended order: a sample that no
+longer matches its contract is how an unusable template reaches a reader.
+
+### Tests executed
+
+`node tools/repo.mjs check:all` — 7 checks, 257 tests, exit 0.
+
+### Known limitations and remaining risk
+
+- Nothing computes a fingerprint. The preference order is recorded per
+  occurrence as `fingerprint_inputs.strategy`, but deduplication is E1-011.
+- SARIF ingestion is not implemented. `source.format` records provenance so the
+  mapping can be tested against real documents once a parser exists.
+- Evidence redaction, quarantine and the ingestion receipt belong to the Finding
+  Hub and need Python.
+- The lifecycle is data, not an enforced state machine. Enforcement arrives with
+  E1-012.
+
 ## E1-003 — Canonical scope serialization and digest (preparation)
 
 Status: **partial**. Depends on: E0-004. Phase 1.

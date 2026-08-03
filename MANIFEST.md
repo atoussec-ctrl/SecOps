@@ -44,6 +44,7 @@
 | `infra` | Compose lab topology and optional infrastructure definitions |
 | `packages/contracts/infra` | Lab topology schema used by the exposure assertion |
 | `packages/contracts/ci` | Workflow set schema used by the workflow policy check |
+| `packages/contracts/findings` | Occurrence, finding and lifecycle contracts |
 | `.github/workflow-set.json` | CI workflow descriptor that workflow files are rendered from |
 | `tests` | Foundation acceptance suite and capstone assertions |
 

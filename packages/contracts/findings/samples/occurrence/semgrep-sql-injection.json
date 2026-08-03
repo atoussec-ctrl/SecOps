@@ -1,0 +1,42 @@
+{
+  "occurrence_id": "OCC-2026-0001",
+  "ingestion_receipt": "9f2c4d1e6b8a03f57c9d2e4b6a80f13c5d7e9b2a4c6f8013e5d7b9a2c4f60138",
+  "source": {
+    "format": "sarif",
+    "run_id": "RUN-2026-0001",
+    "adapter_id": "semgrep-importer",
+    "tool_name": "semgrep",
+    "tool_version": "0.0.0",
+    "rule_id": "seclab.ts.raw-sql-interpolation",
+    "rule_family": "injection"
+  },
+  "asset": {
+    "asset_id": "web-lab-insecure",
+    "kind": "repository",
+    "artifact_digest": "sha256:3c1b8f0a7d2e5c4b9a6f13e80d5c2b7a4f9e6c3018d5b2a7f4c9e6013b8d5a2f"
+  },
+  "location": {
+    "kind": "source-file",
+    "path": "apps/web-lab-insecure/src/orders/order-repository.ts",
+    "start_line": 42,
+    "operation": "findOrdersByCustomer",
+    "parameter": "customerId"
+  },
+  "message": "Query is assembled by string interpolation of a request-derived value.",
+  "context": "const sql = `SELECT * FROM orders WHERE customer_id = '${customerId}'`;",
+  "source_severity": "error",
+  "source_confidence": "high",
+  "fingerprint_inputs": {
+    "strategy": "repository-rule-location",
+    "normalized_key": "web-lab-insecure|injection|apps/web-lab-insecure/src/orders/order-repository.ts|findOrdersByCustomer"
+  },
+  "mappings": {
+    "cwe": ["CWE-89"],
+    "owasp": ["A03:2021-Injection"],
+    "verification": ["ASVS-5.3.4"]
+  },
+  "references": ["https://cwe.mitre.org/data/definitions/89.html"],
+  "raw_result_digest": "sha256:7e4a1c9b3d6f05820e4c7a1b9d3f6058ac2e4b6d8f01a3c5e7b9d1f3a5c7e9b1",
+  "first_observed_at": "2026-08-03T10:15:00Z",
+  "last_observed_at": "2026-08-03T10:15:00Z"
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/events/event-envelope.schema.json",
+  "title": "Domain Event Envelope",
+  "description": "The envelope every domain event carries (backlog E1-013). Events are published through a transactional outbox, so consumers deduplicate on event_id and detect gaps with aggregate_version. An event carries identifiers and safe facts only: never evidence bytes, request bodies or secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "producer",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_version",
+    "correlation_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "Idempotency key. A consumer that has seen this id must not act twice."
+    },
+    "event_type": {
+      "$ref": "#/$defs/event_type",
+      "description": "Carries its major version, so a removed or redefined field becomes a new type rather than a silent break."
+    },
+    "occurred_at": { "$ref": "#/$defs/timestamp" },
+    "producer": { "$ref": "#/$defs/producer" },
+    "aggregate_type": { "$ref": "#/$defs/aggregate_type" },
+    "aggregate_id": { "$ref": "#/$defs/identifier" },
+    "aggregate_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000,
+      "description": "Ordering is guaranteed only within one aggregate. A consumer that sees a gap rebuilds from the source API rather than guessing."
+    },
+    "correlation_id": { "$ref": "#/$defs/identifier" },
+    "causation_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The event that caused this one. Absent for the first event in a chain."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Fields declared for this event type in the catalog. Consumers ignore unknown optional fields, which is what makes an additive change backward compatible."
+    }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z_]*\\.[a-z][a-z_]*\\.v[1-9][0-9]*$",
+      "maxLength": 80
+    },
+    "producer": {
+      "enum": ["orchestrator", "finding-hub", "report-generator", "delivery-pipeline"]
+    },
+    "aggregate_type": {
+      "enum": ["engagement", "run", "finding", "remediation", "retest", "risk_acceptance", "report", "artifact"]
+    }
+  }
+}

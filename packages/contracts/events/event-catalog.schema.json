@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/events/event-catalog.schema.json",
+  "title": "Domain Event Catalog",
+  "description": "Every event the platform publishes, with its producer, consumers and payload fields (backlog E1-013). Payload fields are declared by name and type, never by inline example, so a field that would carry evidence bytes or a secret has no way to be expressed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalog_version", "events"],
+  "properties": {
+    "catalog_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_type",
+        "producer",
+        "consumers",
+        "aggregate_type",
+        "payload_fields",
+        "description"
+      ],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z_]*\\.[a-z][a-z_]*\\.v[1-9][0-9]*$",
+          "maxLength": 80
+        },
+        "producer": {
+          "enum": ["orchestrator", "finding-hub", "report-generator", "delivery-pipeline"]
+        },
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "console",
+              "audit",
+              "metrics",
+              "alerting",
+              "reporting",
+              "finding-hub",
+              "orchestrator",
+              "gate",
+              "ingestion",
+              "retest-queue",
+              "signer",
+              "risk-owner"
+            ]
+          }
+        },
+        "aggregate_type": {
+          "enum": [
+            "engagement",
+            "run",
+            "finding",
+            "remediation",
+            "retest",
+            "risk_acceptance",
+            "report",
+            "artifact"
+          ]
+        },
+        "payload_fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/payload_field" }
+        },
+        "description": { "type": "string", "minLength": 15, "maxLength": 300 }
+      }
+    },
+    "payload_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$" },
+        "type": {
+          "enum": ["identifier", "timestamp", "integer", "boolean", "enum_value", "digest", "label"],
+          "description": "There is no free-text or binary type. A payload carries identifiers and safe facts, so evidence bytes and request bodies cannot be placed in one."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "An optional field may be added to an existing major version; a required one may not."
+        }
+      }
+    }
+  }
+}

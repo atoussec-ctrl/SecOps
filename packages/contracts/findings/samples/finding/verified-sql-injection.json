@@ -1,0 +1,104 @@
+{
+  "finding_id": "FND-2026-0001",
+  "fingerprint": {
+    "algorithm_version": "1.0.0",
+    "value": "bb14b880a479cbd275960fc68595140f6a6337bec768e475b9f8195f907e6383"
+  },
+  "title": "Order lookup builds SQL by interpolating a request value",
+  "description": "The insecure Web lab assembles the order query with string interpolation of a request-derived customer identifier, so a crafted value alters the query rather than being treated as data.",
+  "root_cause": "The repository layer concatenates input into SQL instead of using a parameterised statement, so no trust boundary separates data from query structure.",
+  "impact": "A synthetic canary record belonging to another customer was read. Proof stopped at the seeded canary; no dataset was enumerated.",
+  "state": "verified",
+  "owner": "Lab Operator",
+  "confidence": "high",
+  "priority": {
+    "level": "P1",
+    "rationale": "High technical impact and high confidence on a lab-reachable asset, with no compensating control in the insecure target.",
+    "decided_by": "Lab Reviewer"
+  },
+  "risk_signals": {
+    "cvss_v4_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+    "exploit_evidence": "demonstrated",
+    "reachability": "lab-network",
+    "asset_criticality": "medium",
+    "control_effectiveness": "none"
+  },
+  "affected": {
+    "asset_ids": [
+      "web-lab-insecure"
+    ],
+    "components": [
+      "orders/order-repository"
+    ]
+  },
+  "occurrence_ids": [
+    "OCC-2026-0001"
+  ],
+  "evidence_ids": [
+    "EV-2026-0001"
+  ],
+  "mappings": {
+    "primary_cwe": "CWE-89",
+    "owasp": [
+      "A03:2021-Injection"
+    ],
+    "verification": [
+      "ASVS-5.3.4",
+      "WSTG-INPV-05"
+    ]
+  },
+  "remediation": {
+    "direction": "Replace interpolation with a parameterised statement and add an architecture rule rejecting raw SQL assembly at the trust boundary.",
+    "change_reference": "web-lab-secure/orders",
+    "regression_test_reference": "tests/security/web-injection-regression"
+  },
+  "retest": {
+    "performed_by": "Independent Reviewer",
+    "performed_at": "2026-08-03T16:40:00Z",
+    "artifact_digest": "sha256:5a9c3e70b2d4f6180a3c5e79b1d3f5079ac2e4b6d8f0a2c4e6b8d0f2a4c6e8b0",
+    "original_proof_succeeds": false
+  },
+  "audit": [
+    {
+      "at": "2026-08-03T10:15:00Z",
+      "actor": "semgrep-importer",
+      "to_state": "new",
+      "reason": "Occurrence ingested from a scoped run."
+    },
+    {
+      "at": "2026-08-03T11:00:00Z",
+      "actor": "Lab Reviewer",
+      "from_state": "new",
+      "to_state": "triaged",
+      "reason": "Asset confirmed in scope and result reproduced manually."
+    },
+    {
+      "at": "2026-08-03T11:30:00Z",
+      "actor": "Lab Reviewer",
+      "from_state": "triaged",
+      "to_state": "confirmed",
+      "reason": "Root cause, impact and redacted canary evidence recorded."
+    },
+    {
+      "at": "2026-08-03T13:00:00Z",
+      "actor": "Lab Developer",
+      "from_state": "confirmed",
+      "to_state": "remediating",
+      "reason": "Parameterised statement implemented in the secure target."
+    },
+    {
+      "at": "2026-08-03T15:20:00Z",
+      "actor": "Lab Developer",
+      "from_state": "remediating",
+      "to_state": "ready-for-retest",
+      "reason": "Candidate fix merged and the protected pipeline passed."
+    },
+    {
+      "at": "2026-08-03T16:40:00Z",
+      "actor": "Independent Reviewer",
+      "from_state": "ready-for-retest",
+      "to_state": "verified",
+      "reason": "Independent retest against the named artifact; the original proof no longer succeeds."
+    }
+  ]
+}

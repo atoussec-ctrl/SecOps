@@ -1,0 +1,17 @@
+{
+  "event_id": "EVT-2026-0004",
+  "event_type": "finding.confirmed.v1",
+  "occurred_at": "2026-08-03T11:30:00Z",
+  "producer": "finding-hub",
+  "aggregate_type": "finding",
+  "aggregate_id": "FND-2026-0001",
+  "aggregate_version": 3,
+  "correlation_id": "ENG-2026-0001",
+  "causation_id": "EVT-2026-0003",
+  "payload": {
+    "finding_id": "FND-2026-0001",
+    "primary_cwe": "CWE-89",
+    "priority": "P1",
+    "confirmed_by": "lab-reviewer"
+  }
+}
