@@ -7,7 +7,8 @@
 - Normative language: English
 - Portuguese entrypoint: `README.pt-BR.md`
 - Diagram source: Mermaid fenced blocks
-- Implementation status: no application code; build-ready specification
+- Implementation status: E0-001 to E0-006 complete; E0-007, E1-001 and E1-003 partial
+- Bootstrap command: `node tools/repo.mjs check:all`
 
 ## Sections
 
@@ -23,10 +24,28 @@
 | `docs/05-devsecops` | Pipelines, gates, scanners, SBOM and release |
 | `docs/06-testing` | TDD, coverage, mutation, E2E and resilience |
 | `docs/07-data-api` | Domain model, schema, APIs, events and SARIF mapping |
-| `docs/08-agent` | Agent manual, phases, backlog, DoD and bootstrap prompt |
+| `docs/08-agent` | Agent manual, phases, backlog, DoD, bootstrap prompt, implementation log and conflict register |
 | `docs/09-operations` | Local, scan, incident, backup and maintenance runbooks |
 | `adrs` | Accepted architectural decisions and index |
 | `templates` | Finding, report, threat, test, risk, ADR, runbook and PR templates |
+
+## Implementation sections
+
+| Path | Purpose |
+| --- | --- |
+| `tools` | Repository task interface (`node tools/repo.mjs help`) |
+| `version-manifest.json` | Pinned toolchain versions and undecided selections |
+| `package.json`, `package-lock.json` | Private root manifest and exact Node lockfile |
+| `apps` | Console, Web labs, Java API lab and Mobile lab module boundaries |
+| `services` | Orchestrator, Finding Hub and report generator boundaries |
+| `packages` | Language-neutral contracts and shared TypeScript primitives |
+| `packages/contracts/security` | Scope record schema and safe scope samples |
+| `security` | Scan rule packs and versioned scan profiles |
+| `infra` | Compose lab topology and optional infrastructure definitions |
+| `packages/contracts/infra` | Lab topology schema used by the exposure assertion |
+| `packages/contracts/ci` | Workflow set schema used by the workflow policy check |
+| `.github/workflow-set.json` | CI workflow descriptor that workflow files are rendered from |
+| `tests` | Foundation acceptance suite and capstone assertions |
 
 ## Completeness checklist
 

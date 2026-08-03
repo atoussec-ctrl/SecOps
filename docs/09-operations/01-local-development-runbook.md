@@ -14,10 +14,30 @@ its actual repository task interface while preserving behavior.
 - macOS/Xcode for iOS builds.
 - Sufficient disk/memory for selected target and scanner profiles.
 
+## Implemented tasks
+
+The steps below are conceptual until their backlog task lands. These commands
+exist today:
+
+| Command | Purpose |
+| --- | --- |
+| `node tools/repo.mjs check:all` | Run every check in bootstrap order; the one bootstrap command |
+| `node tools/repo.mjs help` | List every repository task |
+| `node tools/repo.mjs check:prerequisites` | Verify local toolchains against `version-manifest.json` |
+| `node tools/repo.mjs check:docs` | Validate documentation links, fences and the ADR index |
+| `node tools/repo.mjs check:contracts` | Compile every JSON Schema and validate every sample document |
+| `node tools/repo.mjs check:architecture` | Enforce module boundaries and process-execution ownership |
+| `node tools/repo.mjs check:workflows` | Enforce workflow permissions, action pinning and injection policy |
+| `node tools/repo.mjs check:exposure` | Assert the lab topology keeps every target off the host network |
+| `node tools/repo.mjs check:foundation` | Run the repository foundation acceptance tests |
+
+Exit codes are `0` success, `1` task failed and `2` invalid invocation.
+
 ## First bootstrap
 
 1. Verify repository signature/source and release tag if applicable.
-2. Run prerequisite/version check.
+2. Run prerequisite/version check: `node tools/repo.mjs check:prerequisites`, or
+   `node tools/repo.mjs check:all` to run every check in order.
 3. Install dependencies strictly from lockfiles.
 4. Verify tool/container image digests.
 5. Build secure core services and run unit/contract tests.
@@ -64,3 +84,4 @@ Do not start vulnerable targets during dependency bootstrap.
 - Mobile device dirty: revert snapshot/profile before continuing.
 - Teardown partial: use tracked resource inventory and retry; do not delete broad
   unrelated Docker resources.
+

@@ -33,6 +33,8 @@
 | CI/CD | [`01-cicd-architecture.md`](../05-devsecops/01-cicd-architecture.md) |
 | Testing | [`01-test-strategy.md`](../06-testing/01-test-strategy.md) |
 | Agent behavior | [`01-operating-manual.md`](../08-agent/01-operating-manual.md) |
+| Completed task evidence | [`07-implementation-log.md`](../08-agent/07-implementation-log.md) |
+| Unresolved normative conflicts | [`08-specification-conflicts.md`](../08-agent/08-specification-conflicts.md) |
 | Operations | [`01-local-development-runbook.md`](../09-operations/01-local-development-runbook.md) |
 
 ## Change control
