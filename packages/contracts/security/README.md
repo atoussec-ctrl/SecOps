@@ -59,6 +59,15 @@ side and the verifying side must agree byte for byte on what was approved.
 it. The `scope_hash` in each sample is a real digest over that form, verified on
 every run, not a placeholder.
 
+Two details decide whether a second implementation agrees, and both are covered
+by rejected vectors rather than left to be discovered:
+
+- **Serialize with `ensure_ascii=False`.** Non-ASCII text is emitted literally.
+  Python's default would escape it to `\uXXXX` and change the digest.
+- **Object keys are ASCII only.** Sorting by UTF-16 code unit and by code point
+  disagree above the basic multilingual plane, so the character set is
+  restricted rather than the ordering assumed.
+
 What a static contract cannot cover stays with the runtime work: resolving and
 pinning DNS answers, detecting answer drift and rebinding, and revalidating
 redirects are E1-002.
