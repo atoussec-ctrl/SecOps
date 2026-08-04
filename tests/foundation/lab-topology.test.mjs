@@ -131,7 +131,7 @@ test("E0-005 no lab target attaches to an ingress network", () => {
 // The schema has no representation for a wildcard bind address, so a publicly
 // reachable target cannot be written down.
 test("E0-005 a non-loopback bind address is not expressible", () => {
-  for (const address of ["0.0.0.0", "::", "192.168.56.1", ""]) {
+  for (const address of ["0.0.0.0", "::", "192.168.56.20", ""]) {
     const topology = mutated((t) => {
       t.services.console.published_ports[0].host_ip = address;
     });

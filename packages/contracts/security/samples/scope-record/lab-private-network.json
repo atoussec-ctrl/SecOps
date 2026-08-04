@@ -10,7 +10,7 @@
     "approver": "Lab Reviewer",
     "approved_at": "2026-08-03T08:30:00Z",
     "reference": "local-approval/ENG-2026-0002",
-    "scope_hash": "76ee2f7de6e4b26da0aac92b04cb524aa0249b67ff80c3f33ea3ef47e5f50ac8"
+    "scope_hash": "88611022e05026b270c47bd04a8e8a59c23c332574c40f22fe5d464d81bccef6"
   },
   "validity": {
     "start": "2026-08-03T09:00:00Z",
@@ -18,21 +18,46 @@
     "timezone": "UTC"
   },
   "targets": {
-    "applications": ["api-java-lab"],
-    "hostnames": ["api.lab.test"],
-    "ipv4": ["192.168.56.10"],
-    "cidrs": ["192.168.56.0/24"],
-    "urls": ["https://api.lab.test:8443/api"],
-    "ports": [8443],
-    "api_versions": ["v1", "v2"]
+    "applications": [
+      "api-java-lab"
+    ],
+    "hostnames": [
+      "api.lab.test"
+    ],
+    "ipv4": [
+      "192.168.56.10"
+    ],
+    "cidrs": [
+      "192.168.56.0/24"
+    ],
+    "urls": [
+      "https://api.lab.test:8443/api"
+    ],
+    "ports": [
+      8443
+    ],
+    "api_versions": [
+      "v1",
+      "v2"
+    ]
   },
   "exclusions": {
-    "hostnames": ["metrics.lab.test"],
-    "ipv4": ["192.168.56.1"],
+    "hostnames": [
+      "metrics.lab.test"
+    ],
+    "ipv4": [
+      "192.168.56.20"
+    ],
     "cidrs": [],
-    "paths": ["/actuator", "/internal"]
+    "paths": [
+      "/actuator",
+      "/internal"
+    ]
   },
-  "allowed_profiles": ["passive", "bounded-active"],
+  "allowed_profiles": [
+    "passive",
+    "bounded-active"
+  ],
   "budgets": {
     "max_requests_per_second": 10,
     "max_concurrency": 4,

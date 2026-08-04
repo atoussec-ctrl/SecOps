@@ -283,6 +283,20 @@
       "rationale": "A public name that merely begins with localhost."
     },
     {
+      "input": "web.lab.test.",
+      "kind": "hostname",
+      "classification": "reserved-domain",
+      "in_scope_eligible": false,
+      "rationale": "Absolute form of a reserved name. Well formed and safe to reach, yet ineligible: the scope pattern admits no trailing dot, so this spelling could never appear in a signed scope."
+    },
+    {
+      "input": "http://web.lab.test./",
+      "kind": "url",
+      "classification": "reserved-domain",
+      "in_scope_eligible": false,
+      "rationale": "The same absolute name inside a URL. Two spellings of one host must not differ in whether they can be authorized."
+    },
+    {
       "input": "http://localhost:8081/",
       "kind": "url",
       "classification": "loopback",
