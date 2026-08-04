@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -131,9 +132,21 @@ test("E0-007 help lists the workflow check and it passes on this repository", ()
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Workflows: no problems found/);
-  // The actions are not pinned yet, so the check must say so rather than imply
-  // a workflow exists and was verified.
-  assert.match(result.stdout, /actions not yet pinned/);
+
+  // A pass means one of two things and the output must distinguish them: every
+  // action is pinned and each workflow file matches what its descriptor
+  // renders, or nothing could be generated yet and the check says so. Silence
+  // would let an unpinned action read as a verified workflow.
+  const deferred = /actions not yet pinned/.test(result.stdout);
+  const rendered = existsSync(
+    path.join(repositoryRoot, ".github", "workflows", "pr.yml"),
+  );
+
+  assert.notEqual(
+    deferred,
+    rendered,
+    `expected either deferred actions or a rendered workflow, got deferred=${deferred} rendered=${rendered}`,
+  );
 });
 
 test("E0-006 help lists the architecture check and it passes on this repository", () => {

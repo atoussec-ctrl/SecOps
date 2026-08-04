@@ -88,18 +88,40 @@ test("E1-010 every state is reachable from the initial state", () => {
 });
 
 // A finding must be able to leave every non-terminal state, or it can strand.
-test("E1-010 every non-terminal state has a way out", () => {
+// A terminal state is a resting state rather than a dead end: it may be left,
+// but only on new evidence. An unconditional exit would make the flag a label
+// with nothing behind it, so the evidence requirement is asserted here.
+test("E1-010 every state has the exits its terminal flag implies", () => {
   for (const entry of lifecycle.states) {
     const outgoing = lifecycle.transitions.filter(
       (transition) => transition.from === entry.state,
     );
 
-    if (entry.terminal) {
+    if (!entry.terminal) {
+      assert.ok(outgoing.length > 0, `${entry.state} is not terminal but has no exit`);
       continue;
     }
 
-    assert.ok(outgoing.length > 0, `${entry.state} is not terminal but has no exit`);
+    for (const transition of outgoing) {
+      assert.ok(
+        transition.requires.includes("redacted-evidence"),
+        `${entry.state} is terminal but leaves to ${transition.to} without new evidence`,
+      );
+    }
   }
+});
+
+// Every transition costs something. A state change a reviewer can make with no
+// stated requirement is the shape an audit cannot reconstruct afterwards.
+test("E1-010 no transition is unconditional", () => {
+  for (const transition of lifecycle.transitions) {
+    assert.ok(
+      transition.requires.length > 0,
+      `${transition.from} -> ${transition.to} requires nothing`,
+    );
+  }
+
+  assert.equal(lifecycleSchema.$defs.transition.properties.requires.minItems, 1);
 });
 
 // docs/03-applications/05-finding-hub-spec.md, "Confirmation requirements".

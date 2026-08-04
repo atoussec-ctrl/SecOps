@@ -138,3 +138,22 @@ All entries are open. None has an accepted ADR.
     dynamic CI reverts during teardown (`05-devsecops/05-dynamic-mobile.md:68-79`).
     Apply the stricter per-run reset until decided.
     Blocks: E4-010.
+
+## Version and toolchain policy
+
+17. **The version policy treats host tools and artifact inputs identically.**
+    `07-assumptions-version-policy.md` requires every entry pinned to an exact
+    version with no ranges, which is right for anything that ends up in an
+    artifact — a container image digest, an action commit SHA, a dependency
+    lockfile. It is wrong for a host tool that only has to be present and
+    recent enough: the pinned `containerRuntime` is whatever the developer's
+    workstation reports, so asserting it on any other machine fails on a
+    version difference that changes nothing about the build. A GitHub-hosted
+    runner carrying Docker 28.0.4 against a manifest pinned at 29.6.2 is the
+    observed case.
+    Proposal: separate the two categories. An artifact input stays exactly
+    pinned; a host tool declares a minimum and the probe reports anything
+    below it. Until this is decided, the exact pin stands and host toolchain
+    verification runs only where the manifest describes the machine, which is
+    local development.
+    Blocks: E0-002, E0-007.

@@ -32,11 +32,6 @@
               }
             },
             {
-              "name": "Verify local toolchains",
-              "kind": "run",
-              "command": "node tools/repo.mjs check:prerequisites"
-            },
-            {
               "name": "Validate documentation",
               "kind": "run",
               "command": "node tools/repo.mjs check:docs"

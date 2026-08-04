@@ -64,7 +64,7 @@ languages are not installed on this machine.
 | JSON Schema contracts | 10 |
 | Verification modules (`tools/`) | 9 |
 | Foundation test suites | 15 |
-| Tests | 273, all passing |
+| Tests | 274, all passing |
 
 ### Built and verified
 
@@ -76,7 +76,7 @@ languages are not installed on this machine.
 | E0-004 Scope JSON Schema and safe sample scopes | complete |
 | E0-005 Private Compose topology and exposure assertion | complete |
 | E0-006 Architecture dependency fitness tests | complete |
-| E0-007 Base PR workflow with minimal permissions | partial — blocked |
+| E0-007 Base PR workflow with minimal permissions | workflow built; gate stages blocked |
 
 ### Prepared ahead of their language
 
@@ -104,12 +104,17 @@ entries. The three that block the most work:
 - **`git` is not installed.** Publication to GitHub goes through the Git Data
   API instead.
 
-Two supply-chain pins are unresolved and deliberately left unselected rather
-than guessed: container image digests (`nodeImage`, `pythonImage`, `javaImage`,
-`postgresql`) and GitHub Action commit SHAs (`actions/checkout`,
-`actions/setup-node`). Both require network access to resolve. Until they are
-pinned, the exposure and workflow checks report them as *deferred with a
-blocking task* — never as a pass.
+Four container image digests are still unselected: `nodeImage`, `pythonImage`,
+`javaImage` and `postgresql`. Each waits on a choice that belongs to another
+task — which Python runtime, which Java LTS, which base image the Console ships
+on — not merely on registry access. Until they are pinned, `check:exposure`
+reports them as *deferred with a blocking task*, never as a pass.
+
+The two GitHub Action pins are resolved: `actions/checkout` at `v7.0.1` and
+`actions/setup-node` at `v7.0.0`, each recorded as the 40-character commit its
+release tag resolves to, read from the action repository rather than
+transcribed from a tag. `check:workflows` now verifies a rendered workflow
+instead of reporting a deferral.
 
 ## Quick start
 
@@ -150,7 +155,7 @@ vector.
 | --- | --- |
 | `help` | Lists every task with its phase and description. |
 | `check:foundation` | Runs the foundation acceptance suite: module boundaries, the physical separation of the insecure and secure Web targets, the task interface contract, and the fail-closed behavior of the checks themselves. |
-| `check:prerequisites` | Probes local toolchains against `version-manifest.json`. A tool required by the active phase may not be unselected. Probes are bounded by a timeout and an output limit, and a timeout is a distinct outcome from a failure. |
+| `check:prerequisites` | Probes local toolchains against `version-manifest.json`. A tool required by the active phase may not be unselected. Probes are bounded by a timeout and an output limit, and a timeout is a distinct outcome from a failure. Local only — see below. |
 | `check:docs` | Validates every relative link, every fenced code block and the ADR index against the ADR files on disk. |
 | `check:contracts` | Compiles every JSON Schema and validates every sample document against it. A sample that has drifted from its contract fails here, before any test runs. |
 | `check:architecture` | Enforces the dependency direction from [ADR-001](adrs/001-polyglot-monorepo.md) and the ownership of process execution: domain code may not import infrastructure, and only the orchestrator may spawn a process. |
@@ -161,6 +166,17 @@ vector.
 `check:all` is verified by running it rather than by a test: it invokes
 `check:foundation`, so a test that executed it would recurse into the suite that
 contains the test. Its parts are covered individually.
+
+**`check:prerequisites` does not run in CI**, and the first run of the pull
+request workflow is why. The manifest pins `containerRuntime` to the version on
+the developer's workstation; a GitHub-hosted runner carried a different one and
+the check failed on a difference that changes nothing about the build. The
+verifier describes a development machine, not a runner. What CI actually needs
+from the manifest — that no phase-0 entry is left unselected, and that the
+workflow's `node-version` equals the pinned Node — is asserted by the foundation
+suite and by `check:workflows`, both of which do run there. The underlying
+policy gap is entry 17 of the
+[conflict register](docs/08-agent/08-specification-conflicts.md).
 
 ### One defect this interface already caught
 
@@ -183,6 +199,10 @@ why every check here distinguishes *pending* from *passed*.
 ├── MANIFEST.md                   Package manifest and completeness checklist
 ├── package.json                  Private root manifest, exact engines
 ├── version-manifest.json         Pinned versions and explicitly unselected entries
+│
+├── .github/
+│   ├── workflow-set.json         Descriptor the workflow files are rendered from
+│   └── workflows/pr.yml          Generated; check:workflows fails if hand-edited
 │
 ├── docs/                         The specification — 68 documents
 │   ├── 00-overview/              Vision, scope, standards, roadmap, document map
@@ -241,7 +261,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               15 acceptance suites, 273 tests
+    ├── foundation/               15 acceptance suites, 274 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -353,12 +373,20 @@ Its selection rule is strict:
 > the backlog task that must decide it. A prerequisite required by the active
 > phase may never stay unselected. Ranges are not permitted.
 
-| Entry | Status | Version |
+| Entry | Status | Pinned to |
 | --- | --- | --- |
 | `node` | pinned | 24.18.1 |
 | `npm` | pinned | 11.16.0 |
 | `containerRuntime` | pinned | 29.6.2 |
+| `actionsCheckout` | pinned | `actions/checkout` @ `3d3c42e5…` (v7.0.1) |
+| `actionsSetupNode` | pinned | `actions/setup-node` @ `82076278…` (v7.0.0) |
 | 23 further entries | unselected, each naming its blocking task | — |
+
+An action is pinned by the **commit its release tag resolves to**, never by the
+tag. A tag can be moved to point at different code after review; a commit SHA
+cannot. `check:workflows` rejects a workflow that references an action any other
+way, and `check:prerequisites` rejects a manifest entry whose `commitSha` is not
+40 hexadecimal characters.
 
 A host runtime and a container image are tracked as **separate entries**. Reusing
 a host `node` version as an image reference was rejected by `check:exposure`,
@@ -470,7 +498,7 @@ Done, which requires the evidence — not the intention — to exist.
 Current measurement over `tools/`, with the foundation suite:
 
 ```
-line 95.72 | branch 98.41 | funcs 96.83
+line 95.63 | branch 98.06 | funcs 96.83
 ```
 
 Two caveats, stated because an unqualified number here would be misleading:
@@ -512,7 +540,7 @@ verifies against the files on disk.
 ## Open decisions that need a human
 
 [`08-specification-conflicts.md`](docs/08-agent/08-specification-conflicts.md)
-holds **16 open conflicts** between normative documents. The operating manual
+holds **17 open conflicts** between normative documents. The operating manual
 forbids taking the less restrictive reading silently, so until each is decided
 the stricter reading applies and the choice is recorded.
 
@@ -525,12 +553,16 @@ Four of them block work that is otherwise ready:
 | 8 | Protected-policy independence is not designed: safety tests must be independent of repository input, yet a pull request can change the workflows. | E0-007 |
 | 9 | The PR active-profile terminology is unclear: "narrowly targeted" testing is not one of the three defined tool classes. | E0-007, E2-013 |
 
-Two further inputs are needed from a human or a network-connected environment:
+One further input is needed from a human:
 
-- **Install Python** to unblock all of Phase 1.
-- **Provide the Action commit SHAs** to finish E0-007, for example
-  `gh api repos/actions/checkout/commits/v5 --jq .sha`. They are not guessed
-  here; an invented pin is worse than a recorded gap.
+- **Install Python** to unblock all of Phase 1. Every service in the control and
+  finding planes is Python, so nothing beyond contracts can be built for them
+  until it exists. Nothing else in the backlog is waiting on a person.
+
+The four unpinned image digests are not in this list. Each waits on a selection
+its own task owns — the Python runtime, the Java LTS, the Console base image and
+the PostgreSQL topology — so pinning one now would decide that task's design
+from the outside.
 
 ## Working in this repository
 
