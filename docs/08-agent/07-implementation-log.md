@@ -4,6 +4,99 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — review pass over the whole repository
+
+### Verification before changing anything
+
+`node tools/repo.mjs check:all` — 7 checks, 273 tests, exit 0. The working tree
+was compared file by file against `main` using Git blob hashes: 157 files on
+each side, no file missing, no file extra, no content drift.
+
+### Defect fixed — a terminal state that was not terminal
+
+`finding-lifecycle.schema.json` said of `terminal`: "A finding never leaves a
+terminal state without new evidence, so no transition may originate from one."
+Both states flagged terminal in the sample violated the second half.
+`false-positive` transitions to `triaged` and `verified` transitions to
+`reopened`.
+
+The test that should have caught it did not. It computed the outgoing
+transitions of each state and then, for a terminal state, discarded them and
+skipped — so a state could claim to be a resting place while the table beneath
+it said otherwise, and the suite read green.
+
+The data was right and the description was wrong. Both exits require
+`redacted-evidence`, which is exactly the first half of the rule: a resting
+state may be left, but only on new evidence. The description now states that,
+and the test asserts it — every transition out of a terminal state must demand
+new evidence. An unconditional exit is what makes the flag a label with nothing
+behind it.
+
+### Tightening — an unconditional transition is no longer expressible
+
+`requires` had `maxItems` and no `minItems`, so a transition demanding nothing
+was a legal document. Every transition in the table already requires at least
+one item, so `minItems: 1` costs nothing and removes a state change that an
+audit could not reconstruct afterwards. `check:contracts` now rejects it before
+the tests run.
+
+### Correction — a blocker that was no longer real
+
+E0-007 recorded its two action pins as blocked because "resolving the SHA for
+the chosen release needs network access to the action repository". That was
+true when written and is no longer true: the environment has an authenticated
+`gh`. Both are now pinned to the commit their release tag resolves to, read
+from the action repository:
+
+- `actions/checkout` v7.0.1 → `3d3c42e5aac5ba805825da76410c181273ba90b1`
+- `actions/setup-node` v7.0.0 → `820762786026740c76f36085b0efc47a31fe5020`
+
+The earlier note in this repository suggested resolving `v5`. Both actions are
+now at v7, so following that note would have pinned two major versions of stale
+code. The tag was resolved rather than assumed.
+
+With the pins in place the PR workflow renders and `.github/workflows/pr.yml`
+exists. `check:workflows` stopped reporting a deferral and started verifying a
+file byte-for-byte against its descriptor.
+
+The four image digests were **not** pinned. Each waits on a selection its own
+task owns — which Python runtime, which Java LTS, which base image the Console
+ships on, which PostgreSQL the topology runs — so pinning one now would decide
+that task's design from outside it. Only the network half of their blocking
+reason was resolved.
+
+### Second defect — a test that pinned a state instead of a property
+
+Rendering the workflow made `repository-task-interface.test.mjs` fail. It
+asserted the literal string "actions not yet pinned", which described the
+repository on the day it was written rather than the behavior being tested. It
+now asserts the property: the check reports **either** a deferral **or** a
+rendered workflow, never both and never neither. Silence would let an unpinned
+action read as a verified workflow.
+
+### Not changed
+
+The remaining audit found nothing to fix. Every keyword used by the ten
+contracts is in the validator's supported set, so no contract is enforced by a
+rule that is silently ignored. The safety claims made in schema prose are
+carried by structure rather than by comment: `synthetic_data_only` is
+`const: true`, `risk_signals` has no aggregate score field to collapse into,
+`evidence_ids` holds identifiers so bytes cannot be inlined, and `context` is
+bounded. Seventeen tests in `scope-record.test.mjs` appear to assert nothing
+until read: they call a helper that asserts both rejection and the JSON path the
+rejection came from, which is stronger than asserting rejection alone.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 7 checks, 274 tests, exit 0.
+Coverage over `tools/`: 95.63% line, 98.06% branch, 96.83% function.
+
+Both new lifecycle invariants were confirmed to fail on the previous data before
+the fix was applied: removing `redacted-evidence` from the `verified` exit
+produces "verified is terminal but leaves to reopened without new evidence", and
+emptying a `requires` list is rejected by `check:contracts` at
+`/transitions/4/requires`.
+
 ## Revision — root README rewritten against the built repository
 
 ### Why
