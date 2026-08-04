@@ -4,6 +4,67 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — the address policy had no IPv6
+
+### Gap found
+
+[`04-orchestrator-spec.md`](../03-applications/04-orchestrator-spec.md), "Safety
+tests", requires **public IPv4/IPv6 rejection** and **encoded or alternate
+address representation rejection**. The conformance vectors covered the IPv4
+alternate forms well — zero-padded octets, decimal, hexadecimal, trailing
+whitespace, out-of-range octet — and contained **no IPv6 at all**.
+
+That matters because the scope record cannot express an IPv6 target, so an IPv6
+destination reaches the runtime only through DNS resolution or a redirect. That
+is precisely the path the Scope Guard has to police, and it was the path with no
+table to be tested against.
+
+### The absence that was doing the work, unguarded
+
+The scope record is IPv4-only by construction: no `ipv6` field under `targets`,
+`additionalProperties: false`, and none of `private_ipv4`, `private_cidr`,
+`lab_hostname` or `lab_url` accepts an IPv6 literal or a bracketed host. Each was
+verified by probe rather than by reading.
+
+Nothing asserted any of it. Widening `lab_url` to accept `http://[::1]/` would
+have passed every test in the repository. A test now checks every IPv6 vector
+against all four scope patterns and requires each to reject it, and asserts the
+`ipv6` field is still absent. Both halves were confirmed to fail against a
+deliberately widened URL pattern before being kept.
+
+### Vectors added
+
+`samples/address-policy/ipv6-vectors.json`, 21 vectors: loopback in both
+spellings, unspecified, link-local with and without a zone identifier,
+unique-local, global unicast, documentation, multicast, two malformed literals
+and a prefix over 128 — and the group that motivated the work, **IPv4-mapped
+IPv6**.
+
+`::ffff:8.8.8.8` is a public address that an implementation reading only the
+IPv4 text form never sees. `::ffff:192.168.56.10` is the subtler one: unwrapping
+the mapping and then trusting the result admits a private address by a spelling
+the signed scope never authorized. `64:ff9b::8.8.8.8` carries a public IPv4
+address behind the NAT64 well-known prefix.
+
+Eight IPv4 vectors were added for ranges the registry reserves and the policy had
+no name for: carrier-grade NAT `100.64.0.0/10`, the three documentation
+TEST-NETs, benchmarking `198.18.0.0/15`, reserved `240.0.0.0/4` and `0.0.0.0/8`.
+Reserved is not the same as available — a range assigned to nobody cannot be an
+owned lab target — so all eight are denied.
+
+### Contract changes
+
+`kind` gained `ipv6` and `ipv6-cidr`. `classification` gained `unique-local`,
+`carrier-grade-nat`, `documentation`, `benchmarking`, `reserved` and
+`ipv4-mapped`. A new test requires every value in that enum to be exercised by
+at least one vector, so a classification cannot be added as a word with no rule
+behind it.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 7 checks, 278 tests, exit 0.
+68 address vectors: 47 IPv4, CIDR, hostname and URL; 21 IPv6.
+
 ## Revision — review pass over the whole repository
 
 ### Verification before changing anything

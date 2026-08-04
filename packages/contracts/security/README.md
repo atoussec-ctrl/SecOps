@@ -10,7 +10,8 @@ documents that are validated on every run of `node tools/repo.mjs check:contract
 | `scope-record.schema.json` | Authorization boundary for an engagement (E0-004) |
 | `samples/scope-record/` | Safe scope templates, validated against the schema above |
 | `address-policy.schema.json` | Conformance vectors for the special-range policy (E1-001) |
-| `samples/address-policy/` | Which targets may appear in a scope record, and why |
+| `samples/address-policy/ipv4-and-host-vectors.json` | 47 IPv4, CIDR, hostname and URL vectors |
+| `samples/address-policy/ipv6-vectors.json` | 21 IPv6 vectors, none of them scope-eligible |
 | `canonical-form.schema.json` | Conformance vectors for the scope digest serialization (E1-003) |
 | `samples/canonical-form/` | Canonical string and SHA-256 for each value shape |
 
@@ -24,6 +25,21 @@ The address and hostname patterns admit only loopback, RFC 1918 private space
 and RFC 2606 reserved domains, so a public target cannot be written down at all.
 Alternate encodings of a private address, such as zero-padded or decimal forms,
 are rejected as well.
+
+**The scope record is IPv4-only by construction.** There is no `ipv6` target
+field, `targets` rejects unknown properties, and the URL pattern admits no
+bracketed host, so an IPv6 destination cannot be authorized in any spelling.
+That absence does the work a runtime check would otherwise have to do, and
+because an absence is easy to erase by accident, a test asserts it: every IPv6
+vector is checked against all four scope patterns and must be rejected by each.
+
+An IPv6 destination can therefore only arrive at runtime, through DNS resolution
+or a redirect, which is where `samples/address-policy/ipv6-vectors.json` applies.
+The case worth knowing is **IPv4-mapped IPv6**: `::ffff:8.8.8.8` is a public
+address that an implementation reading only the IPv4 text form never sees.
+`::ffff:192.168.56.10` is the subtler one — unwrapping the mapping and then
+trusting the result admits a private address by a spelling the signed scope
+never authorized.
 
 Beyond addresses, the schema makes several rules structural rather than advisory:
 

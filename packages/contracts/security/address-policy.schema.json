@@ -28,19 +28,26 @@
           "maxLength": 200,
           "description": "The literal an operator or adapter might supply, including forms that are not valid addresses."
         },
-        "kind": { "enum": ["ipv4", "ipv4-cidr", "hostname", "url"] },
+        "kind": { "enum": ["ipv4", "ipv4-cidr", "ipv6", "ipv6-cidr", "hostname", "url"] },
         "classification": {
           "enum": [
             "loopback",
             "private",
+            "unique-local",
             "reserved-domain",
             "public",
             "link-local",
             "multicast",
             "broadcast",
             "unspecified",
+            "carrier-grade-nat",
+            "documentation",
+            "benchmarking",
+            "reserved",
+            "ipv4-mapped",
             "malformed"
-          ]
+          ],
+          "description": "A range is named for the registry entry that reserves it, not for whether it happens to be routable today. carrier-grade-nat, documentation, benchmarking and reserved are none of them private, so none is lab-eligible. ipv4-mapped is its own classification because an implementation that only inspects the IPv4 text form will not see one."
         },
         "in_scope_eligible": {
           "type": "boolean",

@@ -1,0 +1,153 @@
+{
+  "policy_version": "1.0.0",
+  "description": "IPv6 conformance vectors for the special-range policy (backlog E1-001). docs/03-applications/04-orchestrator-spec.md requires public IPv4/IPv6 rejection and rejection of encoded or alternate address representations. No vector here is scope-eligible: the scope record has no IPv6 target field and none of its patterns accept an IPv6 literal, so an IPv6 destination can only arrive through DNS resolution or a redirect, which is exactly where the runtime must classify it.",
+  "vectors": [
+    {
+      "input": "::1",
+      "kind": "ipv6",
+      "classification": "loopback",
+      "in_scope_eligible": false,
+      "rationale": "IPv6 loopback. Safe to reach but not expressible in a scope, so it is never eligible."
+    },
+    {
+      "input": "0:0:0:0:0:0:0:1",
+      "kind": "ipv6",
+      "classification": "loopback",
+      "in_scope_eligible": false,
+      "rationale": "Uncompressed form of ::1. Two spellings of one address must classify alike."
+    },
+    {
+      "input": "::",
+      "kind": "ipv6",
+      "classification": "unspecified",
+      "in_scope_eligible": false,
+      "rationale": "The unspecified address. Binding it exposes every interface."
+    },
+    {
+      "input": "fe80::1",
+      "kind": "ipv6",
+      "classification": "link-local",
+      "in_scope_eligible": false,
+      "rationale": "Link-local unicast. The denylist rejects link-local endpoints independently of scope."
+    },
+    {
+      "input": "fe80::a00:27ff:fe4e:66a1%eth0",
+      "kind": "ipv6",
+      "classification": "link-local",
+      "in_scope_eligible": false,
+      "rationale": "Zone identifier attached to a link-local address. The zone does not make it routable."
+    },
+    {
+      "input": "fd00::1",
+      "kind": "ipv6",
+      "classification": "unique-local",
+      "in_scope_eligible": false,
+      "rationale": "Unique local address, the IPv6 analogue of RFC 1918. Private, but the scope cannot name it."
+    },
+    {
+      "input": "fc00::/7",
+      "kind": "ipv6-cidr",
+      "classification": "unique-local",
+      "in_scope_eligible": false,
+      "rationale": "The whole unique-local block."
+    },
+    {
+      "input": "2001:4860:4860::8888",
+      "kind": "ipv6",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Global unicast. Public IPv6 rejection is a required safety test."
+    },
+    {
+      "input": "2606:4700:4700::1111",
+      "kind": "ipv6",
+      "classification": "public",
+      "in_scope_eligible": false,
+      "rationale": "Global unicast resolver. Reachable from the lab and out of bounds."
+    },
+    {
+      "input": "2001:db8::1",
+      "kind": "ipv6",
+      "classification": "documentation",
+      "in_scope_eligible": false,
+      "rationale": "Reserved for documentation. Not assigned, so not a lab target either."
+    },
+    {
+      "input": "ff02::1",
+      "kind": "ipv6",
+      "classification": "multicast",
+      "in_scope_eligible": false,
+      "rationale": "All-nodes link-local multicast. Multicast is denied outside an isolated wireless profile."
+    },
+    {
+      "input": "::ffff:127.0.0.1",
+      "kind": "ipv6",
+      "classification": "ipv4-mapped",
+      "in_scope_eligible": false,
+      "rationale": "IPv4-mapped loopback. An implementation must map it back to IPv4 before classifying, never accept it as written."
+    },
+    {
+      "input": "::ffff:8.8.8.8",
+      "kind": "ipv6",
+      "classification": "ipv4-mapped",
+      "in_scope_eligible": false,
+      "rationale": "IPv4-mapped public address. This is the alternate representation that defeats a check reading only the IPv4 text form."
+    },
+    {
+      "input": "::ffff:192.168.56.10",
+      "kind": "ipv6",
+      "classification": "ipv4-mapped",
+      "in_scope_eligible": false,
+      "rationale": "IPv4-mapped private address. Even the safe one is ineligible: a scope names the IPv4 form or nothing."
+    },
+    {
+      "input": "64:ff9b::8.8.8.8",
+      "kind": "ipv6",
+      "classification": "ipv4-mapped",
+      "in_scope_eligible": false,
+      "rationale": "NAT64 well-known prefix carrying a public IPv4 address. A second way to write a destination the policy denies."
+    },
+    {
+      "input": "::ffff:127.0.0.1",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "An IPv6 literal in a URL must be bracketed. Unbracketed it is not a URL at all."
+    },
+    {
+      "input": "http://[::1]:8081/",
+      "kind": "url",
+      "classification": "loopback",
+      "in_scope_eligible": false,
+      "rationale": "Bracketed IPv6 loopback URL. Well formed and still ineligible, because the scope URL pattern admits no bracketed host."
+    },
+    {
+      "input": "http://[::ffff:8.8.8.8]/",
+      "kind": "url",
+      "classification": "ipv4-mapped",
+      "in_scope_eligible": false,
+      "rationale": "Public IPv4 address disguised as an IPv6 literal inside a URL."
+    },
+    {
+      "input": "2001:db8::g",
+      "kind": "ipv6",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Non-hexadecimal digit in a group."
+    },
+    {
+      "input": "2001::db8::1",
+      "kind": "ipv6",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Two compressions. The expansion is ambiguous, so the literal has no single meaning."
+    },
+    {
+      "input": "fd00::1/129",
+      "kind": "ipv6-cidr",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Prefix length above 128."
+    }
+  ]
+}
