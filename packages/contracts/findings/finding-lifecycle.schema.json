@@ -78,7 +78,7 @@
         "description": { "type": "string", "minLength": 10, "maxLength": 300 },
         "terminal": {
           "type": "boolean",
-          "description": "A finding never leaves a terminal state without new evidence, so no transition may originate from one."
+          "description": "A resting state. A finding may leave one only on new evidence, so every transition out of a terminal state must require redacted-evidence. A terminal state with an unconditional exit is not a resting state."
         }
       }
     },
@@ -98,9 +98,11 @@
         },
         "requires": {
           "type": "array",
+          "minItems": 1,
           "maxItems": 17,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/requirement" }
+          "items": { "$ref": "#/$defs/requirement" },
+          "description": "A state change always costs something. An unconditional transition has no representation here."
         },
         "rationale": { "type": "string", "minLength": 10, "maxLength": 300 }
       }
