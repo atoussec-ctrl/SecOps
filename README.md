@@ -64,7 +64,7 @@ languages are not installed on this machine.
 | JSON Schema contracts | 10 |
 | Verification modules (`tools/`) | 9 |
 | Foundation test suites | 15 |
-| Tests | 274, all passing |
+| Tests | 278, all passing |
 
 ### Built and verified
 
@@ -87,7 +87,7 @@ paragraph to interpret.
 
 | Backlog task | What is built | What waits on Python |
 | --- | --- | --- |
-| E1-001 Special-range address policy | 39 conformance vectors and the policy contract | the canonicalizer and resolver |
+| E1-001 Special-range address policy | 68 conformance vectors across IPv4, IPv6, hostnames and URLs | the canonicalizer and resolver |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
@@ -261,7 +261,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               15 acceptance suites, 274 tests
+    ├── foundation/               15 acceptance suites, 278 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -347,7 +347,7 @@ samples before any test runs.
 | Contract | Enforces |
 | --- | --- |
 | `security/scope-record.schema.json` | The signed scope a run is authorized against, with two worked samples (loopback and private network) carrying real digests. |
-| `security/address-policy.schema.json` | Special-range address handling, with 39 conformance vectors covering public, loopback, link-local, metadata and excluded ranges. |
+| `security/address-policy.schema.json` | Special-range address handling: 68 conformance vectors over IPv4, IPv6, hostnames and URLs, covering public, loopback, link-local, metadata, carrier NAT, documentation, benchmarking and reserved ranges, plus the alternate spellings — zero-padded octets, decimal and hexadecimal forms, and IPv4-mapped IPv6. |
 | `security/canonical-form.schema.json` | The canonical serialization the scope digest is computed over: 10 accepted and 7 rejected vectors, so a second implementation is held to the same rules. |
 | `findings/occurrence.schema.json` | What a tool observed, including `source_severity`. |
 | `findings/finding.schema.json` | Identity, state and human decisions. It has **no `severity` field at all**, and a test asserts its absence — collapsing a tool signal into a risk decision is what [`07-vulnerability-management.md`](docs/04-security/07-vulnerability-management.md) forbids. Priority lives here with a rationale and a named decider. |
