@@ -218,14 +218,20 @@
   },
   "actions": {
     "actionsCheckout": {
-      "status": "unselected",
-      "blockedBy": "E0-007",
-      "reason": "Third-party actions are pinned to an immutable commit SHA, never a tag. Resolving the SHA for the chosen release needs network access to the action repository."
+      "status": "pinned",
+      "repository": "actions/checkout",
+      "release": "v7.0.1",
+      "commitSha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "verifiedOn": "2026-08-04",
+      "note": "Latest release at pinning time. The SHA is the commit the v7.0.1 tag ref resolves to, read from the action repository rather than transcribed from a tag in a workflow file."
     },
     "actionsSetupNode": {
-      "status": "unselected",
-      "blockedBy": "E0-007",
-      "reason": "Pinned to an immutable commit SHA once the checkout action is pinned and the pair is reviewed together."
+      "status": "pinned",
+      "repository": "actions/setup-node",
+      "release": "v7.0.0",
+      "commitSha": "820762786026740c76f36085b0efc47a31fe5020",
+      "verifiedOn": "2026-08-04",
+      "note": "Latest release at pinning time, reviewed together with the checkout pin. Its node-version input must equal the pinned node entry, which the workflow policy asserts."
     }
   }
 }
