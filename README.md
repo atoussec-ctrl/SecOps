@@ -155,7 +155,7 @@ vector.
 | --- | --- |
 | `help` | Lists every task with its phase and description. |
 | `check:foundation` | Runs the foundation acceptance suite: module boundaries, the physical separation of the insecure and secure Web targets, the task interface contract, and the fail-closed behavior of the checks themselves. |
-| `check:prerequisites` | Probes local toolchains against `version-manifest.json`. A tool required by the active phase may not be unselected. Probes are bounded by a timeout and an output limit, and a timeout is a distinct outcome from a failure. |
+| `check:prerequisites` | Probes local toolchains against `version-manifest.json`. A tool required by the active phase may not be unselected. Probes are bounded by a timeout and an output limit, and a timeout is a distinct outcome from a failure. Local only — see below. |
 | `check:docs` | Validates every relative link, every fenced code block and the ADR index against the ADR files on disk. |
 | `check:contracts` | Compiles every JSON Schema and validates every sample document against it. A sample that has drifted from its contract fails here, before any test runs. |
 | `check:architecture` | Enforces the dependency direction from [ADR-001](adrs/001-polyglot-monorepo.md) and the ownership of process execution: domain code may not import infrastructure, and only the orchestrator may spawn a process. |
@@ -166,6 +166,17 @@ vector.
 `check:all` is verified by running it rather than by a test: it invokes
 `check:foundation`, so a test that executed it would recurse into the suite that
 contains the test. Its parts are covered individually.
+
+**`check:prerequisites` does not run in CI**, and the first run of the pull
+request workflow is why. The manifest pins `containerRuntime` to the version on
+the developer's workstation; a GitHub-hosted runner carried a different one and
+the check failed on a difference that changes nothing about the build. The
+verifier describes a development machine, not a runner. What CI actually needs
+from the manifest — that no phase-0 entry is left unselected, and that the
+workflow's `node-version` equals the pinned Node — is asserted by the foundation
+suite and by `check:workflows`, both of which do run there. The underlying
+policy gap is entry 17 of the
+[conflict register](docs/08-agent/08-specification-conflicts.md).
 
 ### One defect this interface already caught
 
@@ -529,7 +540,7 @@ verifies against the files on disk.
 ## Open decisions that need a human
 
 [`08-specification-conflicts.md`](docs/08-agent/08-specification-conflicts.md)
-holds **16 open conflicts** between normative documents. The operating manual
+holds **17 open conflicts** between normative documents. The operating manual
 forbids taking the less restrictive reading silently, so until each is decided
 the stricter reading applies and the choice is recorded.
 
