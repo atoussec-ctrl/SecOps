@@ -185,6 +185,62 @@
       "rationale": "Prefix shorter than the policy minimum of 8."
     },
     {
+      "input": "100.64.0.1",
+      "kind": "ipv4",
+      "classification": "carrier-grade-nat",
+      "in_scope_eligible": false,
+      "rationale": "RFC 6598 shared address space. Not private and not assignable to a lab target."
+    },
+    {
+      "input": "100.64.0.0/10",
+      "kind": "ipv4-cidr",
+      "classification": "carrier-grade-nat",
+      "in_scope_eligible": false,
+      "rationale": "The whole shared address space block."
+    },
+    {
+      "input": "192.0.2.1",
+      "kind": "ipv4",
+      "classification": "documentation",
+      "in_scope_eligible": false,
+      "rationale": "TEST-NET-1, reserved for documentation. Reserved is not the same as available."
+    },
+    {
+      "input": "198.51.100.1",
+      "kind": "ipv4",
+      "classification": "documentation",
+      "in_scope_eligible": false,
+      "rationale": "TEST-NET-2, reserved for documentation."
+    },
+    {
+      "input": "203.0.113.1",
+      "kind": "ipv4",
+      "classification": "documentation",
+      "in_scope_eligible": false,
+      "rationale": "TEST-NET-3, reserved for documentation."
+    },
+    {
+      "input": "198.18.0.1",
+      "kind": "ipv4",
+      "classification": "benchmarking",
+      "in_scope_eligible": false,
+      "rationale": "RFC 2544 benchmarking range. Traffic here can escape into a provider network."
+    },
+    {
+      "input": "240.0.0.1",
+      "kind": "ipv4",
+      "classification": "reserved",
+      "in_scope_eligible": false,
+      "rationale": "Reserved for future use. No assignment exists to authorize."
+    },
+    {
+      "input": "0.1.2.3",
+      "kind": "ipv4",
+      "classification": "unspecified",
+      "in_scope_eligible": false,
+      "rationale": "Inside 0.0.0.0/8, this network. Not a destination."
+    },
+    {
       "input": "localhost",
       "kind": "hostname",
       "classification": "loopback",
