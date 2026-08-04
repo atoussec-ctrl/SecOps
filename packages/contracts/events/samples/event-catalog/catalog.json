@@ -78,7 +78,7 @@
       "event_type": "ingestion.accepted.v1",
       "producer": "finding-hub",
       "consumers": ["orchestrator", "gate"],
-      "aggregate_type": "run",
+      "aggregate_type": "ingestion",
       "description": "Results were durably ingested. This receipt is what allows a run to be marked complete.",
       "payload_fields": [
         { "name": "run_id", "type": "identifier", "required": true },

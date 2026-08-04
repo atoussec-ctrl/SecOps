@@ -60,7 +60,8 @@
       "enum": ["orchestrator", "finding-hub", "report-generator", "delivery-pipeline"]
     },
     "aggregate_type": {
-      "enum": ["engagement", "run", "finding", "remediation", "retest", "risk_acceptance", "report", "artifact"]
+      "enum": ["engagement", "run", "ingestion", "finding", "remediation", "retest", "risk_acceptance", "report", "artifact"],
+      "description": "Exactly one producer writes each aggregate type. Two writers would collide on aggregate_version or open gaps that consumers read as lost events."
     }
   }
 }
