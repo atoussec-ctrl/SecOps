@@ -39,6 +39,15 @@ All entries are open. None has an accepted ADR.
    (`03-security-gates.md:23-31`; `05-devsecops/08-observability.md:25-42`).
    The root README states 95% line, statement, function and branch coverage,
    which should be cited as the gate value.
+   Measurement note: no coverage gate is wired into `check:all`, because doing
+   so would fix the undecided threshold silently. Two measurement hazards are
+   recorded for whoever decides it. Passing a *directory* to
+   `node --test --experimental-test-coverage` yields a report naming zero files
+   and an aggregate of 100%, so the gate must pass an explicit file list and
+   refuse a report that covers nothing. And a module exercised through
+   subprocess execution is understated, because V8 coverage in the parent
+   cannot attribute a child's run — `tools/repo.mjs` measures 73.99% line while
+   its behavior is fully tested.
    Blocks: E0-003, E0-007.
 
 5. **Provenance timing is inconsistent.** Stage 4 creates provisional

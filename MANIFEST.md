@@ -7,8 +7,10 @@
 - Normative language: English
 - Portuguese entrypoint: `README.pt-BR.md`
 - Diagram source: Mermaid fenced blocks
-- Implementation status: E0-001 to E0-006 complete; E0-007, E1-001 and E1-003 partial
+- Implementation status: E0-001 to E0-006 complete; E0-007, E1-001, E1-003,
+  E1-010 and E1-013 partial
 - Bootstrap command: `node tools/repo.mjs check:all`
+- Verification: 7 checks, 273 tests
 
 ## Sections
 
@@ -45,6 +47,7 @@
 | `packages/contracts/infra` | Lab topology schema used by the exposure assertion |
 | `packages/contracts/ci` | Workflow set schema used by the workflow policy check |
 | `packages/contracts/findings` | Occurrence, finding and lifecycle contracts |
+| `packages/contracts/events` | Event envelope and catalog of mandatory events |
 | `.github/workflow-set.json` | CI workflow descriptor that workflow files are rendered from |
 | `tests` | Foundation acceptance suite and capstone assertions |
 

@@ -5,6 +5,21 @@ laboratório local de segurança Web, API, Mobile e infraestrutura. O material
 normativo está em inglês para reduzir ambiguidades técnicas e facilitar o uso
 por agentes de código; este arquivo é o ponto de entrada em português.
 
+## Estado atual
+
+A especificação está completa e a Fase 0 já está construída e verificada. O
+comando único de bootstrap é:
+
+```bash
+node tools/repo.mjs check:all
+```
+
+São 7 verificações e 273 testes. As tarefas E0-001 a E0-006 estão concluídas;
+E0-007 está bloqueada por decisões normativas em aberto, e a Fase 1 está
+bloqueada porque Python não está instalado nesta máquina. O
+[`README.md`](README.md) traz o inventário completo, o que cada verificação
+impõe e as decisões que ainda dependem de uma pessoa.
+
 ## Resultado esperado
 
 O agente deverá construir:

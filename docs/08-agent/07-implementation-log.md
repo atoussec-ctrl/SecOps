@@ -4,6 +4,55 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — root README rewritten against the built repository
+
+### Why
+
+The root README described the specification and said nothing about the
+foundation that now verifies it. A reader arriving at the repository could not
+learn the bootstrap command, what the seven checks enforce, which tasks are
+built, which are blocked, or what a contributor is expected to run before
+opening a pull request. It also stated the 95% coverage requirement without
+saying what the repository currently measures.
+
+### What was added
+
+Repository layout with the purpose of every directory; the nine tasks of
+`tools/repo.mjs` with what each enforces and the exit-code contract; the design
+principles the tooling actually implements (fail closed, make the unsafe state
+inexpressible, generate rather than parse, canonical serialization, one producer
+per aggregate, zero dependencies in the verification path); the ten contracts
+and what each holds; the version-manifest selection rule and current pins; the
+ADR index; the four conflicts that block ready work and the two inputs needed
+from a human; and the commit, branch and pull-request conventions.
+
+### Measurement recorded rather than gated
+
+Coverage over `tools/` with the foundation suite is 95.72% line, 98.41% branch,
+96.83% function. Two hazards are stated alongside it rather than left for a
+reader to trip over:
+
+- Passing a **directory** to `node --test --experimental-test-coverage` produces
+  a report naming zero files and an aggregate of 100%. This is the same
+  false-green shape as the `NODE_TEST_CONTEXT` defect found in E0-001: a
+  measurement that ran nothing reads as a perfect result.
+- `tools/repo.mjs` measures 73.99% line because its task bodies run in
+  subprocesses, which V8 coverage in the parent cannot attribute. The behavior
+  is tested; the attribution is missing.
+
+No coverage gate was added to `check:all`. The threshold is entry 4 of
+[`08-specification-conflicts.md`](08-specification-conflicts.md), still open, and
+[`01-operating-manual.md`](01-operating-manual.md) forbids resolving a conflict
+silently by implementing one reading. Both hazards are recorded on that entry so
+whoever decides it inherits them.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 7 checks, 273 tests, exit 0.
+
+Three links in the first draft did not resolve; `check:docs` reported all three
+by path before the file was committed, which is the check doing its job.
+
 ## Revision — two producers writing one event aggregate
 
 ### Defect fixed

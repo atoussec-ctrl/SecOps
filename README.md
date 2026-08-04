@@ -1,9 +1,35 @@
 # OWASP & PenTest Security Lab — Agent Build Specification
 
-Version: 1.0.0  
-Status: implementation-ready  
-Audience: AI coding agents, security engineers, developers, QA engineers and learners  
+Version: 1.0.0
+Status: implementation-ready; Phase 0 built, Phase 1 blocked on a missing toolchain
+Audience: AI coding agents, security engineers, developers, QA engineers and learners
 Execution boundary: local or explicitly authorized isolated environments only
+Bootstrap: `node tools/repo.mjs check:all`
+
+---
+
+## Contents
+
+- [Purpose](#purpose)
+- [What exists today](#what-exists-today)
+- [Quick start](#quick-start)
+- [The repository task interface](#the-repository-task-interface)
+- [Repository layout](#repository-layout)
+- [Design principles](#design-principles)
+- [Contracts](#contracts)
+- [Toolchain and version policy](#toolchain-and-version-policy)
+- [Required applications](#required-applications)
+- [Non-negotiable constraints](#non-negotiable-constraints)
+- [Architecture at a glance](#architecture-at-a-glance)
+- [Implementation order](#implementation-order)
+- [Testing and the quality bar](#testing-and-the-quality-bar)
+- [Architecture decisions](#architecture-decisions)
+- [Open decisions that need a human](#open-decisions-that-need-a-human)
+- [Working in this repository](#working-in-this-repository)
+- [Documentation map](#documentation-map)
+- [Source standards](#source-standards)
+
+---
 
 ## Purpose
 
@@ -19,8 +45,328 @@ loop:
 6. Add regression tests and a CI/CD security gate.
 7. Produce evidence, remediation guidance and a retest report.
 
-The repository to be built from this specification is a portfolio-quality
-training system, not a general-purpose attack platform.
+The repository built from this specification is a portfolio-quality training
+system, not a general-purpose attack platform. Every capability that could be
+turned outward — scanning, adapter execution, artifact publication — is
+constrained by a contract before it is constrained by a policy document.
+
+## What exists today
+
+The repository is a **specification package with a working Phase 0 foundation**.
+The specification is complete; the runtime services are not, because their
+languages are not installed on this machine.
+
+| | Count |
+| --- | --- |
+| Markdown documents | 109 (68 under `docs/`) |
+| Architecture decision records | 11 accepted, plus an index |
+| Reusable templates | 8 |
+| JSON Schema contracts | 10 |
+| Verification modules (`tools/`) | 9 |
+| Foundation test suites | 15 |
+| Tests | 273, all passing |
+
+### Built and verified
+
+| Backlog task | Status |
+| --- | --- |
+| E0-001 Polyglot monorepo and repository task interface | complete |
+| E0-002 Version manifest, exact lockfiles, prerequisite verifier | complete |
+| E0-003 Documentation and contract validation jobs | complete |
+| E0-004 Scope JSON Schema and safe sample scopes | complete |
+| E0-005 Private Compose topology and exposure assertion | complete |
+| E0-006 Architecture dependency fitness tests | complete |
+| E0-007 Base PR workflow with minimal permissions | partial — blocked |
+
+### Prepared ahead of their language
+
+These tasks belong to Phase 1 and need Python. The language-neutral half — the
+contract, its conformance vectors and its tests — is built and verified, so the
+runtime implementation has something to be tested against rather than a
+paragraph to interpret.
+
+| Backlog task | What is built | What waits on Python |
+| --- | --- | --- |
+| E1-001 Special-range address policy | 39 conformance vectors and the policy contract | the canonicalizer and resolver |
+| E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
+| E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
+| E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
+
+### Blocked
+
+`node tools/repo.mjs check:prerequisites` reports 3 satisfied and 23 deferred
+entries. The three that block the most work:
+
+- **Python is not installed** (the `python` command on this machine is a
+  Microsoft Store stub). It gates every Phase 1 service: orchestrator, Scope
+  Guard, Finding Hub, ingestion and the outbox.
+- **Java and a Java build tool are not installed.** They gate epic E3.
+- **`git` is not installed.** Publication to GitHub goes through the Git Data
+  API instead.
+
+Two supply-chain pins are unresolved and deliberately left unselected rather
+than guessed: container image digests (`nodeImage`, `pythonImage`, `javaImage`,
+`postgresql`) and GitHub Action commit SHAs (`actions/checkout`,
+`actions/setup-node`). Both require network access to resolve. Until they are
+pinned, the exposure and workflow checks report them as *deferred with a
+blocking task* — never as a pass.
+
+## Quick start
+
+Requirements: Node.js 24.18.1 and npm 11.16.0 (see
+[`version-manifest.json`](version-manifest.json)). No third-party packages are
+installed and none are needed — the verification tooling has zero dependencies.
+
+```bash
+node tools/repo.mjs check:all
+```
+
+That is the single documented bootstrap command. It runs every check in
+dependency order and stops at the first failure. Expected output ends with:
+
+```
+All 7 checks passed.
+```
+
+To see what is available:
+
+```bash
+node tools/repo.mjs help
+```
+
+Exit codes are stable and meaningful: **0** success, **1** the task failed,
+**2** the invocation was invalid (unknown task, missing task, extra arguments).
+A task never exits 0 with an empty or unread result.
+
+## The repository task interface
+
+Every verification is a task on one entry point, `tools/repo.mjs`. There is no
+hidden script, no Makefile and no shell wrapper — the secure-coding standard in
+[`04-security/03-secure-coding-standard.md`](docs/04-security/03-secure-coding-standard.md)
+prohibits shell execution, so every child process is spawned with an argument
+vector.
+
+| Task | What it enforces |
+| --- | --- |
+| `help` | Lists every task with its phase and description. |
+| `check:foundation` | Runs the foundation acceptance suite: module boundaries, the physical separation of the insecure and secure Web targets, the task interface contract, and the fail-closed behavior of the checks themselves. |
+| `check:prerequisites` | Probes local toolchains against `version-manifest.json`. A tool required by the active phase may not be unselected. Probes are bounded by a timeout and an output limit, and a timeout is a distinct outcome from a failure. |
+| `check:docs` | Validates every relative link, every fenced code block and the ADR index against the ADR files on disk. |
+| `check:contracts` | Compiles every JSON Schema and validates every sample document against it. A sample that has drifted from its contract fails here, before any test runs. |
+| `check:architecture` | Enforces the dependency direction from [ADR-001](adrs/001-polyglot-monorepo.md) and the ownership of process execution: domain code may not import infrastructure, and only the orchestrator may spawn a process. |
+| `check:exposure` | Asserts the generated lab topology binds no target to a host-reachable address, grants no privileged mode and declares no host network. Unpinned images are reported as deferred, not passed. |
+| `check:workflows` | Enforces minimal workflow permissions, action pinning by commit SHA, the absence of `pull_request_target`, and that every workflow file on disk is byte-identical to what its descriptor renders. |
+| `check:all` | Runs all seven in bootstrap order and stops at the first failure. |
+
+`check:all` is verified by running it rather than by a test: it invokes
+`check:foundation`, so a test that executed it would recurse into the suite that
+contains the test. Its parts are covered individually.
+
+### One defect this interface already caught
+
+`check:foundation` originally reported success while its own tests failed. A
+nested `node --test` that inherits `NODE_TEST_CONTEXT` skips every file and
+still exits 0, so any invocation from inside a Node test context produced a
+green result that had run nothing. `tools/repo.mjs` now clears
+`NODE_TEST_CONTEXT` and `NODE_TEST_WORKER_ID` before spawning the runner, and
+two regression tests cover it. This is the "scanner reports zero issues but its
+output is missing" case from
+[`04-definition-of-done.md`](docs/08-agent/04-definition-of-done.md), and it is
+why every check here distinguishes *pending* from *passed*.
+
+## Repository layout
+
+```
+.
+├── README.md                     Normative entrypoint (this file)
+├── README.pt-BR.md               Portuguese executive entrypoint
+├── MANIFEST.md                   Package manifest and completeness checklist
+├── package.json                  Private root manifest, exact engines
+├── version-manifest.json         Pinned versions and explicitly unselected entries
+│
+├── docs/                         The specification — 68 documents
+│   ├── 00-overview/              Vision, scope, standards, roadmap, document map
+│   ├── 01-product/               PRD, personas, requirements, acceptance, traceability
+│   ├── 02-architecture/          Context, containers, boundaries, runtime, data
+│   ├── 03-applications/          Per-application implementation specifications
+│   ├── 04-security/              Threat model, Rules of Engagement, test catalogs
+│   ├── 05-devsecops/             Pipelines, gates, scanners, SBOM, release
+│   ├── 06-testing/               TDD, coverage, mutation, E2E, resilience
+│   ├── 07-data-api/              Domain model, schema, APIs, events, SARIF mapping
+│   ├── 08-agent/                 Operating manual, phases, backlog, DoD,
+│   │                             implementation log, conflict register
+│   └── 09-operations/            Local, scan, incident, backup, maintenance runbooks
+│
+├── adrs/                         11 accepted decisions and an index
+├── templates/                    Finding, report, threat, test, risk, ADR, runbook, PR
+│
+├── tools/                        Verification modules — zero dependencies
+│   ├── repo.mjs                  Task interface and exit-code contract
+│   ├── schema.mjs                Fail-closed JSON Schema subset validator
+│   ├── prerequisites.mjs         Bounded toolchain probes
+│   ├── docs-check.mjs            Links, fences, ADR index
+│   ├── contracts-check.mjs       Schema compilation and sample validation
+│   ├── architecture-check.mjs    Dependency direction and execution ownership
+│   ├── topology.mjs              Lab topology descriptor → Compose renderer
+│   ├── workflows.mjs             Workflow descriptor → GitHub Actions renderer
+│   └── scope-hash.mjs            Canonical serialization and scope digest
+│
+├── packages/
+│   ├── contracts/                Language-neutral contracts and conformance vectors
+│   │   ├── security/             Scope record, address policy, canonical form
+│   │   ├── findings/             Occurrence, finding, lifecycle
+│   │   ├── events/               Event envelope and catalog
+│   │   ├── infra/                Lab topology
+│   │   └── ci/                   Workflow set
+│   └── ts-domain/                Shared TypeScript primitives (boundary only)
+│
+├── apps/
+│   ├── console-web/              Lab Console (React + TypeScript)
+│   ├── web-lab-insecure/         Vulnerable Web target
+│   ├── web-lab-secure/           Secure counterpart — a separate deployable unit
+│   ├── api-java-lab/             Java + Spring Boot API target
+│   └── mobile-lab/               Android/iOS lab targets
+│
+├── services/
+│   ├── orchestrator/             Scope Guard, run control, guarded adapters
+│   ├── finding-hub/              Ingestion, deduplication, workflow, evidence
+│   └── report-generator/         Executive, technical and retest reports
+│
+├── security/
+│   ├── rules/                    Scan rule packs
+│   └── profiles/                 Versioned scan profiles
+│
+├── infra/
+│   ├── compose/                  Generated private lab topology
+│   └── terraform/                Optional infrastructure definitions
+│
+└── tests/
+    ├── foundation/               15 acceptance suites, 273 tests
+    └── capstone/                 End-to-end engagement assertions
+```
+
+Every module directory carries a README stating its purpose, its authoritative
+specification and its boundary rules from
+[`03-monorepo-module-boundaries.md`](docs/02-architecture/03-monorepo-module-boundaries.md).
+`check:architecture` enforces those boundaries; they are not advisory.
+
+## Design principles
+
+These are the rules the tooling actually implements. They are worth reading
+before adding anything, because they explain why several contracts look
+narrower than they need to be.
+
+### Fail closed — a missing result is never a pass
+
+Every check distinguishes three outcomes: **passed**, **failed** and **deferred
+with a blocking task**. Nothing is allowed to be silently absent. An unpinned
+image is deferred and names the backlog task that must pin it; it never reads as
+an exposure check that found nothing wrong. A schema keyword the validator has
+not implemented raises an error rather than being skipped, so a contract cannot
+appear to be enforced by a rule that was quietly ignored.
+
+### Make the unsafe state inexpressible, not merely rejected
+
+Wherever possible a safety rule is encoded as *structure* rather than as a
+validation that could be removed. The following have no representation at all in
+their contracts, so no reviewer has to notice their absence:
+
+- a wildcard bind address or a host-network target in the lab topology;
+- privileged mode, added capabilities or a host path mount;
+- `pull_request_target`, a write permission that was not requested, or an action
+  referenced by tag instead of commit SHA;
+- a destructive scan profile;
+- an event payload field carrying free text or bytes — the payload type
+  vocabulary has only identifier, timestamp, integer, boolean, enum value,
+  digest and label, so an event that wanted to carry a request body, a cookie or
+  a token cannot express it.
+
+### Generate, do not parse
+
+The Compose topology ([ADR-009](adrs/009-generated-lab-topology.md)) and the CI
+workflows ([ADR-010](adrs/010-generated-ci-workflows.md)) are **rendered from
+validated JSON descriptors**. The check then asserts the file on disk is
+byte-identical to what the descriptor renders. Hand-editing a workflow is
+detected as a difference rather than analysed as YAML, which removes a whole
+class of "the linter did not understand this construct" failures.
+
+### Canonical serialization for cross-language agreement
+
+The scope digest ([ADR-011](adrs/011-canonical-scope-serialization.md)) must
+produce the same bytes in a TypeScript console and a Python orchestrator. Two
+hazards were removed by restriction rather than by convention: object keys are
+limited to `[A-Za-z0-9_.-]` because JavaScript sorts by UTF-16 code unit and
+Python by code point (they disagree above the basic multilingual plane), and
+unpaired surrogates are refused outright because they have no UTF-8 encoding.
+Non-ASCII text is emitted literally, so a Python implementation must serialize
+with `ensure_ascii=False`. Neither hazard would have failed loudly; both would
+have produced a digest that is merely *different*, and a scope whose digest does
+not verify reads as tampering.
+
+### One aggregate type, one producer
+
+`aggregate_version` is the only ordering the transactional outbox guarantees,
+and a consumer that sees a gap rebuilds from the source API. That contract is
+written for a single writer, so exactly one producer writes each aggregate type
+and an event type is named for the aggregate it versions. Two writers would
+either collide on a version or open gaps that are not losses.
+
+### Zero third-party dependencies in the verification path
+
+`tools/` uses only the Node standard library, including a purpose-built JSON
+Schema subset validator. A supply-chain lab that pulled an unpinned validator to
+check its own supply-chain rules would be self-refuting.
+
+## Contracts
+
+Contracts live under [`packages/contracts/`](packages/contracts/) and are
+language-neutral on purpose: a Python service and a TypeScript console are both
+held to them. Every schema has samples, and `check:contracts` validates the
+samples before any test runs.
+
+| Contract | Enforces |
+| --- | --- |
+| `security/scope-record.schema.json` | The signed scope a run is authorized against, with two worked samples (loopback and private network) carrying real digests. |
+| `security/address-policy.schema.json` | Special-range address handling, with 39 conformance vectors covering public, loopback, link-local, metadata and excluded ranges. |
+| `security/canonical-form.schema.json` | The canonical serialization the scope digest is computed over: 10 accepted and 7 rejected vectors, so a second implementation is held to the same rules. |
+| `findings/occurrence.schema.json` | What a tool observed, including `source_severity`. |
+| `findings/finding.schema.json` | Identity, state and human decisions. It has **no `severity` field at all**, and a test asserts its absence — collapsing a tool signal into a risk decision is what [`07-vulnerability-management.md`](docs/04-security/07-vulnerability-management.md) forbids. Priority lives here with a rationale and a named decider. |
+| `findings/finding-lifecycle.schema.json` | Nine states and twelve transitions. Tests assert every state is reachable from `new`, every non-terminal state has an exit so a finding cannot strand, and confirmation demands the full evidence set. |
+| `events/event-envelope.schema.json` | Idempotency key, per-aggregate ordering, causation, and the producer/aggregate vocabulary. |
+| `events/event-catalog.schema.json` | The 14 mandatory events with producers, consumers and typed payload fields. |
+| `infra/lab-topology.schema.json` | The descriptor the Compose file is rendered from. |
+| `ci/workflow-set.schema.json` | The descriptor the GitHub Actions workflows are rendered from. |
+
+### Why occurrence and finding are separate
+
+SARIF is an interchange format, not the domain model
+([ADR-004](adrs/004-sarif-canonical-import.md)). The occurrence carries what a
+tool observed; the finding owns identity, state and human decisions. That
+separation is what lets a scanner be replaced without touching the workflow.
+
+## Toolchain and version policy
+
+[`version-manifest.json`](version-manifest.json) is the single source of truth.
+Its selection rule is strict:
+
+> An entry is either pinned to an exact version or explicitly unselected with
+> the backlog task that must decide it. A prerequisite required by the active
+> phase may never stay unselected. Ranges are not permitted.
+
+| Entry | Status | Version |
+| --- | --- | --- |
+| `node` | pinned | 24.18.1 |
+| `npm` | pinned | 11.16.0 |
+| `containerRuntime` | pinned | 29.6.2 |
+| 23 further entries | unselected, each naming its blocking task | — |
+
+A host runtime and a container image are tracked as **separate entries**. Reusing
+a host `node` version as an image reference was rejected by `check:exposure`,
+which is why `nodeImage`, `pythonImage` and `javaImage` exist and require a
+`sha256` digest rather than a version string.
+
+Run `node tools/repo.mjs check:prerequisites` for the current state. It reports
+what is satisfied, what is deferred and which phase first requires it.
 
 ## Required applications
 
@@ -53,18 +399,9 @@ training system, not a general-purpose attack platform.
   finding documentation and retest evidence exist.
 - Use exact dependency versions and lockfiles. Updates are reviewed and tested.
 
-## Recommended implementation order
-
-1. Read [vision and goals](docs/00-overview/01-vision-goals.md),
-   [scope](docs/00-overview/02-scope-non-goals.md) and
-   [rules of engagement](docs/04-security/02-rules-of-engagement.md).
-2. Read the [system architecture](docs/02-architecture/01-system-context.md) and
-   all accepted [architecture decisions](adrs/000-index.md).
-3. Follow the [agent operating manual](docs/08-agent/01-operating-manual.md).
-4. Execute the [implementation phases](docs/08-agent/02-implementation-phases.md)
-   in order and consume tasks from the [backlog](docs/08-agent/03-task-backlog.md).
-5. Apply the [Definition of Done](docs/08-agent/04-definition-of-done.md) to every
-   task and milestone.
+These are enforced where enforcement is possible today: `check:exposure` for the
+binding rule, `check:architecture` for the separation of the insecure and secure
+units and for execution ownership, `check:workflows` for the pinning rule.
 
 ## Architecture at a glance
 
@@ -83,26 +420,166 @@ flowchart TB
     CI --> HUB
 ```
 
-## Build outputs
+Container and component detail is in
+[`02-container-component.md`](docs/02-architecture/02-container-component.md);
+the runtime and deployment view is in
+[`04-runtime-deployment.md`](docs/02-architecture/04-runtime-deployment.md).
 
-The implementing agent must deliver:
+## Implementation order
 
-- Reproducible local bootstrap with one documented command.
-- Separate insecure and secure Web applications.
-- A Java API with documented REST and GraphQL contracts.
-- Distinct Android/iOS insecure and secure application identifiers.
-- Scope-guarded Python orchestration and scanner adapters.
-- Finding lifecycle, evidence store and report generation.
-- GitHub Actions workflows for PR, main, nightly and release.
-- CycloneDX or SPDX SBOMs, artifact hashes, signatures and provenance.
-- Threat model, ADRs, runbooks and a full controlled capstone engagement.
+1. Read [vision and goals](docs/00-overview/01-vision-goals.md),
+   [scope](docs/00-overview/02-scope-non-goals.md) and
+   [rules of engagement](docs/04-security/02-rules-of-engagement.md).
+2. Read the [system architecture](docs/02-architecture/01-system-context.md) and
+   all accepted [architecture decisions](adrs/000-index.md).
+3. Follow the [agent operating manual](docs/08-agent/01-operating-manual.md).
+4. Execute the [implementation phases](docs/08-agent/02-implementation-phases.md)
+   in order and consume tasks from the [backlog](docs/08-agent/03-task-backlog.md).
+5. Apply the [Definition of Done](docs/08-agent/04-definition-of-done.md) to every
+   task and milestone.
+6. Record evidence for each completed task in the
+   [implementation log](docs/08-agent/07-implementation-log.md). Do not record a
+   check that was not run.
+
+### Phases and epics
+
+| Phase | Epic | Subject |
+| --- | --- | --- |
+| 0 | E0 | Repository and governance |
+| 1 | E1 | Control and finding planes — orchestrator and Finding Hub |
+| 2 | E2 | Web labs |
+| 3 | E3 | Java API lab |
+| 4 | E4 | Mobile lab |
+| 5 | E5 | DevSecOps and supply chain |
+| 6 | — | Reports and operations |
+| 7 | E6 | Capstone engagement |
+
+Tasks are dependency-ordered. A task is complete only under the Definition of
+Done, which requires the evidence — not the intention — to exist.
+
+## Testing and the quality bar
+
+- **TDD is the required method**, not a preference. See
+  [`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md).
+- **Coverage**: at least 95% line, statement, function and branch for
+  application code.
+- **Mutation**: at least 80% for security-critical modules
+  ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)). No
+  mutation tooling is installed yet.
+
+Current measurement over `tools/`, with the foundation suite:
+
+```
+line 95.72 | branch 98.41 | funcs 96.83
+```
+
+Two caveats, stated because an unqualified number here would be misleading:
+
+- `tools/repo.mjs` measures 73.99% line because its task bodies are exercised
+  through subprocess execution, and V8 coverage in the parent process cannot
+  attribute a child's execution. The behaviour is tested; the attribution is
+  missing.
+- Passing a **directory** to `node --test --experimental-test-coverage` produces
+  a report naming zero files and an aggregate of 100%. Always pass an explicit
+  file list. A coverage gate is not wired into `check:all` yet because the
+  threshold itself is an open normative conflict (entry 4 of the
+  [conflict register](docs/08-agent/08-specification-conflicts.md)), and taking
+  the undecided reading silently is what the operating manual forbids.
+
+Tests are Node's built-in runner (`node:test`, `node:assert/strict`). There is
+no test framework to install.
+
+## Architecture decisions
+
+| ADR | Decision |
+| --- | --- |
+| [001](adrs/001-polyglot-monorepo.md) | Use a polyglot monorepo |
+| [002](adrs/002-separate-insecure-secure.md) | Separate insecure and secure deployable units |
+| [003](adrs/003-local-first-isolation.md) | Local-first private isolation |
+| [004](adrs/004-sarif-canonical-import.md) | Use SARIF for interchange, not the full workflow model |
+| [005](adrs/005-postgresql-outbox.md) | PostgreSQL with a transactional outbox |
+| [006](adrs/006-progressive-gates.md) | Progressive evidence-based security gates |
+| [007](adrs/007-pinned-artifacts.md) | Pin inputs and attest outputs |
+| [008](adrs/008-guarded-adapters.md) | Guard all security tool execution |
+| [009](adrs/009-generated-lab-topology.md) | Lab Compose topology generated from a validated descriptor |
+| [010](adrs/010-generated-ci-workflows.md) | CI workflows generated from a validated descriptor |
+| [011](adrs/011-canonical-scope-serialization.md) | Canonical serialization for the scope digest |
+
+New decisions use [`templates/adr-template.md`](templates/adr-template.md) and
+must be added to [`adrs/000-index.md`](adrs/000-index.md), which `check:docs`
+verifies against the files on disk.
+
+## Open decisions that need a human
+
+[`08-specification-conflicts.md`](docs/08-agent/08-specification-conflicts.md)
+holds **16 open conflicts** between normative documents. The operating manual
+forbids taking the less restrictive reading silently, so until each is decided
+the stricter reading applies and the choice is recorded.
+
+Four of them block work that is otherwise ready:
+
+| # | Conflict | Blocks |
+| --- | --- | --- |
+| 1 | Required-tool errors are inconsistent: a missing result is always a failure in one document, but PR tool warnings are only "visible" in another. | E0-007, E5-005 |
+| 4 | Coverage and deadline thresholds are stated as gates with no values. The 95% figure in this README should be cited as the gate value. | E0-003, E0-007 |
+| 8 | Protected-policy independence is not designed: safety tests must be independent of repository input, yet a pull request can change the workflows. | E0-007 |
+| 9 | The PR active-profile terminology is unclear: "narrowly targeted" testing is not one of the three defined tool classes. | E0-007, E2-013 |
+
+Two further inputs are needed from a human or a network-connected environment:
+
+- **Install Python** to unblock all of Phase 1.
+- **Provide the Action commit SHAs** to finish E0-007, for example
+  `gh api repos/actions/checkout/commits/v5 --jq .sha`. They are not guessed
+  here; an invented pin is worse than a recorded gap.
+
+## Working in this repository
+
+### Commits
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
+Scope names the contract or module touched.
+
+```
+feat(events): add the domain event envelope and catalog contracts
+fix(events): give the ingestion receipt its own aggregate
+docs(readme): describe the built foundation and its verification
+```
+
+The body explains the *why* and the failure mode being prevented, not the diff.
+Branch names are semantic and match the change type: `feat/…`, `fix/…`,
+`docs/…`.
+
+### Before opening a pull request
+
+```bash
+node tools/repo.mjs check:all
+```
+
+Use [`templates/pull-request-template.md`](templates/pull-request-template.md).
+A pull request describes what became *structural* — what a reviewer no longer
+has to remember to check — and states explicitly what was deliberately left out
+and why. Record the evidence in
+[`07-implementation-log.md`](docs/08-agent/07-implementation-log.md) with the
+exact command and the exact counts. A check that was not run is not recorded.
+
+### Adding a contract
+
+1. Write the schema under `packages/contracts/<area>/`.
+2. Add at least one accepted sample and, where the contract exists to reject
+   something, a rejected-vector file.
+3. Add a suite under `tests/foundation/`.
+4. Run `node tools/repo.mjs check:contracts`, then `check:all`.
+
+Prefer removing the unsafe state from the contract over adding a rule that
+forbids it.
 
 ## Documentation map
 
 The complete reading order and ownership map is in
 [Document map](docs/00-overview/05-document-map.md). Templates are under
-[`templates/`](templates/), and architectural decisions are under
-[`adrs/`](adrs/).
+[`templates/`](templates/), architectural decisions under [`adrs/`](adrs/), and
+the package inventory in [`MANIFEST.md`](MANIFEST.md). A Portuguese executive
+summary is in [`README.pt-BR.md`](README.pt-BR.md); this file is normative.
 
 ## Source standards
 
@@ -111,4 +588,3 @@ OWASP API Security Top 10:2023, OWASP MASVS/MASTG/MASWE, NIST SP 800-115,
 NIST SSDF 1.1, CWE, CVSS v4.0, EPSS and the CompTIA PenTest+ PT0-003 objectives.
 Canonical links and versioning rules are listed in
 [Standards and glossary](docs/00-overview/03-standards-glossary.md).
-
