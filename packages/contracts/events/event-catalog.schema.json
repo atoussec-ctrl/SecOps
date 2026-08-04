@@ -63,13 +63,15 @@
           "enum": [
             "engagement",
             "run",
+            "ingestion",
             "finding",
             "remediation",
             "retest",
             "risk_acceptance",
             "report",
             "artifact"
-          ]
+          ],
+          "description": "Exactly one producer writes each aggregate type, and it matches the first segment of event_type. Two writers would collide on aggregate_version or open gaps that consumers read as lost events."
         },
         "payload_fields": {
           "type": "array",

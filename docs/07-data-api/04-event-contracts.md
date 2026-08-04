@@ -55,6 +55,11 @@ publishes/dispatches events and records delivery. Consumers are idempotent using
 Ordering is guaranteed only per aggregate via version. Consumers detect gaps
 and rebuild from source API/read model instead of guessing.
 
+`aggregate_version` is a single-writer counter. Exactly one producer writes each
+aggregate type, and an event type is named for the aggregate it versions. Two
+writers on one aggregate either collide on a version or open gaps that are not
+losses, and a consumer cannot tell either case from a real one.
+
 ## Failure behavior
 
 - Relay retry is bounded and observable.

@@ -4,6 +4,47 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — two producers writing one event aggregate
+
+### Defect fixed
+
+`ingestion.accepted.v1` is produced by the Finding Hub and was catalogued
+against the `run` aggregate, which the orchestrator already writes with
+`run.started`, `run.budget_warning`, `run.cancelled` and `run.completed`. Two
+services were therefore incrementing one `aggregate_version` counter.
+
+[`04-event-contracts.md`](../07-data-api/04-event-contracts.md) makes that
+counter the only ordering the outbox guarantees, and tells a consumer that sees
+a gap to rebuild from the source API. With two independent writers the sequence
+either collides — two events claiming the same version, so a consumer
+deduplicating on order drops one — or opens gaps that are not losses, so every
+receipt triggers a rebuild that finds nothing missing. Neither shows up as a
+failure; both degrade quietly under load, which is when a run is most likely to
+be waiting on its ingestion receipt.
+
+The receipt now versions its own `ingestion` aggregate. It keeps `run_id` in the
+payload, which is what lets the orchestrator correlate the receipt back to the
+run it completes — the correlation was never the problem, the shared counter
+was.
+
+### Why the contract did not catch it
+
+The suite checked that every aggregate type in the catalog is expressible in the
+envelope. Both `run` and `finding-hub` were legal values, so a legal event
+described an illegal arrangement. Single-writer ownership was an assumption the
+prose relied on and no contract stated.
+
+Two tests now state it: each aggregate type has exactly one producer, and an
+event type is named for the aggregate it versions. The first is the invariant;
+the second is the readable form of it, and is what makes a violation visible at
+the name instead of after tallying producers. Both were confirmed to fail on the
+previous catalog before the fix was applied, and the first names the two
+producers in its message.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 7 checks, 273 tests, exit 0.
+
 ## E1-013 — Domain event contracts (preparation)
 
 Status: **partial**. Depends on: E1-008. Phase 1.

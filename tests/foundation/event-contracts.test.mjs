@@ -76,6 +76,43 @@ test("E1-013 no event is consumed by its own producer", () => {
   }
 });
 
+// docs/07-data-api/04-event-contracts.md: "Ordering is guaranteed only per
+// aggregate via version. Consumers detect gaps and rebuild from source."
+// aggregate_version is therefore a single-writer counter. Two producers writing
+// one aggregate type either collide on a version or leave gaps that a consumer
+// reads as lost events and answers with a needless rebuild.
+test("E1-013 each aggregate type has exactly one producer", () => {
+  const producers = new Map();
+
+  for (const event of catalog.events) {
+    const known = producers.get(event.aggregate_type);
+
+    if (known === undefined) {
+      producers.set(event.aggregate_type, event.producer);
+      continue;
+    }
+
+    assert.equal(
+      event.producer,
+      known,
+      `aggregate ${event.aggregate_type} is written by both ${known} and ${event.producer}; ${event.event_type} needs its own aggregate`,
+    );
+  }
+});
+
+// The readable consequence of single-writer ownership: an event named for one
+// aggregate but versioned against another is the shape the rule above forbids,
+// and this catches it at the name rather than after counting producers.
+test("E1-013 an event type is named for the aggregate it versions", () => {
+  for (const event of catalog.events) {
+    assert.equal(
+      event.event_type.slice(0, event.event_type.indexOf(".")),
+      event.aggregate_type,
+      event.event_type,
+    );
+  }
+});
+
 // docs/07-data-api/04-event-contracts.md: events contain identifiers and safe
 // facts, not evidence bytes or secrets. The payload field types make an unsafe
 // payload unrepresentable, and this asserts the vocabulary stays that way.

@@ -21,6 +21,15 @@ key and `aggregate_version` gives per-aggregate order. Ordering is guaranteed
 only within one aggregate; a consumer that sees a gap rebuilds from the source
 API rather than guessing what it missed.
 
+**One aggregate type, one producer.** `aggregate_version` is a single-writer
+counter, so two services writing the same aggregate type either collide on a
+version or leave gaps that a consumer reads as lost events and answers with a
+needless rebuild. The catalog is asserted to keep one producer per aggregate
+type, and each event type is named for the aggregate it versions — which is why
+`ingestion.accepted.v1` versions an `ingestion` aggregate rather than the `run`
+the orchestrator already writes. Its `run_id` payload field is what lets the
+orchestrator correlate the receipt back to the run.
+
 **A payload cannot carry evidence.** Payload fields are declared by name and
 type, and the type vocabulary has no free-text or binary member — only
 identifier, timestamp, integer, boolean, enum value, digest and label. An event
@@ -36,6 +45,12 @@ The catalog is asserted to carry exactly the fourteen events
 `docs/07-data-api/04-event-contracts.md` lists, so dropping one means editing a
 test that cites the source. No event may be consumed by its own producer, since
 that would feed the relay back into the service that emitted the event.
+
+`producer` names a service; `consumers` names roles, and a role may sit inside a
+service that also produces. The self-consumption check compares the two
+vocabularies by name only, so it catches the direct loop and not a role that
+aliases its own producer. Naming a consuming role after its service is what
+keeps that check meaningful.
 
 ## Not yet covered
 
