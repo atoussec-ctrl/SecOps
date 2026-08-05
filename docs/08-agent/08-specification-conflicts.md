@@ -141,7 +141,18 @@ every entry still applies the stricter reading until reviewed.
     (`05-devsecops/08-observability.md:70-74`) does not specify tamper evidence,
     authorized writers and readers, time source, backup or retention, nor
     segregation from deletable evidence and secrets.
-    Blocks: E1-005, E5-011.
+    Addressed by [ADR-013](../../adrs/013-audit-chain.md), status **Proposed**.
+    Append-only is not tamper evident: it describes an interface offering no
+    delete and says nothing about someone reaching past it to the storage
+    underneath. The ADR defines an HMAC hash chain, one writer, a chaining key
+    separate from the grant key, sequence-ordered entries with the timestamp as
+    a claim rather than an ordering mechanism, retention beyond the evidence
+    window, and a fact vocabulary with no free-text member so a permanent store
+    cannot receive deletable material. Backup and key rotation are named as
+    unresolved: rotating mid-chain means either re-chaining history or accepting
+    segmented verification, and that needs its own decision before a second key
+    exists.
+    Blocks: E5-011.
 
 16. **Mobile reset timing differs.** The mobile catalog resets after the
     capstone (`04-security/06-mobile-security-test-catalog.md:45-51`) while

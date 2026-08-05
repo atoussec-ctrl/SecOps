@@ -4,6 +4,98 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-005 (part) — Tamper-evident audit chain
+
+Status: **implemented against a proposed ADR**. Depends on: E1-004. Phase 1.
+
+### The conflict came first, again
+
+Conflict 15 blocked E1-005: the observability document requires the audit store
+to be "append-only" and specifies no tamper evidence, writers, readers, time
+source or segregation from deletable evidence.
+
+Research settled the shape of the gap in one sentence: **append-only is not
+tamper evident.** Append-only describes an interface that offers no delete. It
+says nothing about someone reaching past the interface to the file or table
+underneath — and that person is exactly the one the audit record would otherwise
+describe. Current guidance is an HMAC hash chain over a canonical schema, with
+external anchoring.
+
+[ADR-013](../../adrs/013-audit-chain.md) is that proposal, marked **Proposed**.
+
+### What the chain proves, and what it does not
+
+Each entry chains from the digest of the one before it, so editing, removing or
+reordering an entry breaks verification at the following entry. That locates
+tampering rather than merely suspecting it.
+
+**Truncation of the tail is undetectable from the chain alone.** Removing the
+last *n* entries leaves a chain that verifies perfectly. That is a property of
+hash chains, not an oversight, and it is asserted as a test rather than left in
+prose: a truncated export verifies on its own and fails only against an anchored
+head digest.
+
+Two things narrow it, both required rather than assumed: a monotonic `sequence`
+makes a gap between retained entries visible, and `head_digest` is meant to be
+anchored outside the store. Anchoring is what turns "the chain verifies" into
+"the chain verifies and is as long as it should be".
+
+A second limit is stated by a test that **passes**: someone holding the chaining
+key can rebuild the whole chain end to end and it will verify. That is why the
+chaining key is not the grant key — a compromised grant key must not let its
+holder rewrite the record of what it did.
+
+### Audit and evidence are separate stores, structurally
+
+Fact types are declared by name and the vocabulary has no free-text or binary
+member, the same restriction the event catalogue uses. Values are bounded at 200
+characters so a reason code cannot become a smuggling channel.
+
+This is what makes the retention rule work. Evidence is redacted, retained for a
+bounded window and deleted. Audit is never deleted. A store that is never
+deleted must never receive anything that would eventually have to be, and the
+cheapest way to guarantee that is to make it inexpressible.
+
+### Cross-language verification, and what it caught
+
+The point of a chained export is that someone never trusted to write can verify
+it, so `tests/foundation/audit-chain.test.mjs` recomputes every digest in
+JavaScript from the sample alone.
+
+The first version disagreed with the Python writer at the second entry. The
+cause was mine: `JSON.stringify` with a replacer array filters keys
+**recursively**, so the nested `facts` objects lost every field. Rewritten to
+use the repository's own `canonicalize` from
+[ADR-011](../../adrs/011-canonical-scope-serialization.md), it agrees — which
+also turns the test into a check of the ADR-013 claim that the chain uses that
+form, rather than only a check of the digests.
+
+### Contract shape
+
+The validator refuses cross-file `$ref`, which surfaced while wiring the schema
+and is the fail-closed rule working. The entry definition therefore lives inside
+the chain schema rather than in a second file: an entry on its own is not a
+document anyone exchanges, and two schemas defining one shape would be a
+divergence waiting to happen.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 307 Node tests, 73 Python tests,
+39/39 mutants killed, exit 0. Nine mutants added for this module.
+
+### Known limitations and remaining risk
+
+- **ADR-013 is Proposed.** Backup and key rotation are named as unresolved:
+  rotating mid-chain means either re-chaining history, which defeats the
+  purpose, or accepting segmented verification, and that needs a decision before
+  a second key exists.
+- The store is in memory. Durability belongs with the PostgreSQL schema
+  (E1-008).
+- **Nothing writes to it yet.** The grant and resolution modules produce reason
+  strings built for this, and the action vocabulary names their events, but the
+  call sites are not wired. That is the next commit, not a claim of this one.
+- The rest of E1-005 — run state machine, idempotency, budgets — is not built.
+
 ## Revision — a signature is not a well-formedness proof
 
 ### Defect fixed

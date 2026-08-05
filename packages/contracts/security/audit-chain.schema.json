@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/audit-chain.schema.json",
+  "title": "Audit Chain Export",
+  "description": "A chain of audit entries with the head digest that anchors it (backlog E1-005, ADR-013). This is the shape a compliance bundle carries, so someone who was never trusted to write can verify. head_digest is what makes the export meaningful: chain verification proves entries were not edited or reordered, and proves nothing about entries removed from the end, so the head has to be compared against an anchor held elsewhere.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chain_version",
+    "head_digest",
+    "entries"
+  ],
+  "properties": {
+    "chain_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "head_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The digest of the last entry, recorded separately so a truncated export contradicts it."
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_version",
+        "sequence",
+        "entry_id",
+        "occurred_at",
+        "actor",
+        "action",
+        "outcome",
+        "subject",
+        "facts",
+        "previous_digest",
+        "entry_digest"
+      ],
+      "properties": {
+        "entry_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000,
+          "description": "Monotonic. Orders the chain, and makes a gap between two retained entries visible. It does not make a truncated tail visible; only an external anchor does that."
+        },
+        "entry_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/timestamp",
+          "description": "A claim inside the entry, not an ordering mechanism. A clock that moves backwards produces a surprising timestamp rather than a broken chain."
+        },
+        "actor": {
+          "$ref": "#/$defs/identifier",
+          "description": "Who or what caused the decision. An adapter produces facts and never appends; the control plane is the only writer."
+        },
+        "action": {
+          "enum": [
+            "grant.issued",
+            "grant.refused",
+            "grant.verified",
+            "address.refused",
+            "resolution.pinned",
+            "resolution.refused",
+            "run.started",
+            "run.cancelled",
+            "run.killed",
+            "scope.approved",
+            "scope.refused",
+            "adapter.invoked",
+            "adapter.refused"
+          ],
+          "description": "A closed vocabulary. An action nobody declared cannot be logged, which keeps the record readable by something other than a human."
+        },
+        "outcome": {
+          "enum": [
+            "allowed",
+            "refused"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/identifier",
+          "description": "The run, grant or scope the decision was about."
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fact"
+          },
+          "description": "An entry with no facts records that something happened and not what, which is a decision nobody can review."
+        },
+        "previous_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The digest of the preceding entry. The first entry chains from a fixed genesis value."
+        },
+        "entry_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "description": "One entry in the tamper-evident audit chain (backlog E1-005, ADR-013). Append-only is not tamper evident: it describes an interface that offers no delete, and says nothing about someone reaching past the interface to the storage underneath. Each entry therefore chains from the digest of the one before it, so editing, removing or reordering an entry breaks verification at the next one."
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,40}$"
+        },
+        "type": {
+          "enum": [
+            "identifier",
+            "timestamp",
+            "integer",
+            "boolean",
+            "enum_value",
+            "digest",
+            "label",
+            "reason_code"
+          ],
+          "description": "There is no free-text or binary type, the same restriction the event catalogue uses. Audit is never deleted, and a store that is never deleted must never receive anything that would eventually have to be. A request body, a cookie or a token has no way to be expressed here."
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Rendered as text, but constrained by the declared type. The length bound is what stops a reason code being used as a smuggling channel for an unredacted payload."
+        }
+      }
+    }
+  }
+}

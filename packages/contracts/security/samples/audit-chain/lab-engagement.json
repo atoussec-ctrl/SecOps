@@ -1,0 +1,112 @@
+{
+  "chain_version": "1.0.0",
+  "head_digest": "e8a572964b482e7725221f8ea0576c0b20d2ebc60d8e32a8ea7e6e2f32cc1fcf",
+  "entries": [
+    {
+      "entry_version": "1.0.0",
+      "sequence": 1,
+      "entry_id": "entry.0001",
+      "occurred_at": "2026-08-05T12:00:00Z",
+      "actor": "orchestrator.control",
+      "action": "scope.approved",
+      "outcome": "allowed",
+      "subject": "engagement.lab.0001",
+      "facts": [
+        {
+          "name": "scope_hash",
+          "type": "digest",
+          "value": "88611022e05026b270c47bd04a8e8a59c23c332574c40f22fe5d464d81bccef6"
+        },
+        {
+          "name": "approver",
+          "type": "identifier",
+          "value": "reviewer.lead"
+        }
+      ],
+      "previous_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "entry_digest": "c1010e8c39cc0b6aeaad1d721203a4ade165bb5c370ea65850def25c5b2399eb"
+    },
+    {
+      "entry_version": "1.0.0",
+      "sequence": 2,
+      "entry_id": "entry.0002",
+      "occurred_at": "2026-08-05T12:00:04Z",
+      "actor": "orchestrator.control",
+      "action": "resolution.pinned",
+      "outcome": "allowed",
+      "subject": "run.lab.0001",
+      "facts": [
+        {
+          "name": "hostname",
+          "type": "label",
+          "value": "web.lab.test"
+        },
+        {
+          "name": "address",
+          "type": "label",
+          "value": "192.168.56.10"
+        }
+      ],
+      "previous_digest": "c1010e8c39cc0b6aeaad1d721203a4ade165bb5c370ea65850def25c5b2399eb",
+      "entry_digest": "c385350b823cb1d53a156f0a3d479fb9c9073c8340e278bc6f2aeb61b86447bc"
+    },
+    {
+      "entry_version": "1.0.0",
+      "sequence": 3,
+      "entry_id": "entry.0003",
+      "occurred_at": "2026-08-05T12:00:05Z",
+      "actor": "orchestrator.control",
+      "action": "grant.issued",
+      "outcome": "allowed",
+      "subject": "grant.lab.0001",
+      "facts": [
+        {
+          "name": "audience",
+          "type": "identifier",
+          "value": "adapter.zap.passive"
+        },
+        {
+          "name": "profile",
+          "type": "enum_value",
+          "value": "passive"
+        },
+        {
+          "name": "lifetime_seconds",
+          "type": "integer",
+          "value": "120"
+        }
+      ],
+      "previous_digest": "c385350b823cb1d53a156f0a3d479fb9c9073c8340e278bc6f2aeb61b86447bc",
+      "entry_digest": "bb8bbf18a875b49616d9c28067e5c97bb98d58a4937cd3bbe43b387b54f974a2"
+    },
+    {
+      "entry_version": "1.0.0",
+      "sequence": 4,
+      "entry_id": "entry.0004",
+      "occurred_at": "2026-08-05T12:00:31Z",
+      "actor": "orchestrator.control",
+      "action": "address.refused",
+      "outcome": "refused",
+      "subject": "run.lab.0001",
+      "facts": [
+        {
+          "name": "address",
+          "type": "label",
+          "value": "169.254.169.254"
+        },
+        {
+          "name": "classification",
+          "type": "enum_value",
+          "value": "link-local"
+        },
+        {
+          "name": "reason",
+          "type": "reason_code",
+          "value": "denylist_independent_of_scope"
+        }
+      ],
+      "previous_digest": "bb8bbf18a875b49616d9c28067e5c97bb98d58a4937cd3bbe43b387b54f974a2",
+      "entry_digest": "e8a572964b482e7725221f8ea0576c0b20d2ebc60d8e32a8ea7e6e2f32cc1fcf"
+    }
+  ]
+}
