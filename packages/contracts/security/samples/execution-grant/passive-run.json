@@ -1,0 +1,16 @@
+{
+  "grant_version": "1.0.0",
+  "grant_id": "grant.lab.0001",
+  "nonce": "9f2c4d1a8b7e6f5039a1b2c3d4e5f607",
+  "key_id": "key.2026.08",
+  "scope_hash": "88611022e05026b270c47bd04a8e8a59c23c332574c40f22fe5d464d81bccef6",
+  "audience": "adapter.zap.passive",
+  "run_id": "run.lab.0001",
+  "pinned_addresses": [
+    "192.168.56.10"
+  ],
+  "issued_at": "2026-08-05T12:00:00Z",
+  "expires_at": "2026-08-05T12:02:00Z",
+  "profile": "passive",
+  "signature": "2e33672bf616c404874875890bbcdaf14fbc3aa1e314ce5823dcb2a468a6b28b"
+}

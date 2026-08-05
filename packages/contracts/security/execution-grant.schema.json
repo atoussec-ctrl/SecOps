@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/execution-grant.schema.json",
+  "title": "Execution Grant",
+  "description": "The object an adapter presents to prove it may act (backlog E1-004, ADR-012). Signed over the ADR-011 canonical form of every field except the signature itself. It authorises one run against one pinned target: there is no session, no refresh and no renewal, so a grant that needs extending is a new decision rather than a longer one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "grant_version",
+    "grant_id",
+    "nonce",
+    "key_id",
+    "scope_hash",
+    "audience",
+    "run_id",
+    "pinned_addresses",
+    "issued_at",
+    "expires_at",
+    "profile",
+    "signature"
+  ],
+  "properties": {
+    "grant_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "grant_id": { "$ref": "#/$defs/identifier" },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32,64}$",
+      "description": "Single-use value the replay cache is keyed on. Hexadecimal and at least 128 bits, so it cannot be guessed and cannot be a counter."
+    },
+    "key_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "Names the key that signed this grant, so rotation does not invalidate grants already in flight. A verifier holds an explicit set of trusted values and an unknown one is a refusal, never a fallback."
+    },
+    "scope_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The immutable snapshot this grant authorises against. The scope is referenced, never restated, so a grant and the scope it claims cannot drift apart."
+    },
+    "audience": {
+      "$ref": "#/$defs/identifier",
+      "description": "The adapter identity permitted to present this grant. Presenting it as anyone else is a refusal."
+    },
+    "run_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The single run this grant belongs to, and the unit revocation acts on."
+    },
+    "pinned_addresses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/address" },
+      "description": "The exact addresses resolution authorised (E1-002). A connection to anything else is refused even while the grant is otherwise valid. Empty is not expressible: a grant that authorises no destination authorises nothing."
+    },
+    "issued_at": { "$ref": "#/$defs/timestamp" },
+    "expires_at": { "$ref": "#/$defs/timestamp" },
+    "profile": {
+      "enum": ["passive", "bounded-active"],
+      "description": "There is no third value. Destructive tooling has no representation here, so it cannot be authorised by a grant however it is issued."
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64,128}$",
+      "description": "Over the canonical bytes of every other field. Verified before the window and before revocation, so an unsigned document cannot probe which runs exist."
+    }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "description": "UTC with a literal Z. An offset would let two grants describe the same instant differently and change the canonical bytes."
+    },
+    "address": {
+      "type": "string",
+      "maxLength": 45,
+      "pattern": "^[0-9a-f.:]+$",
+      "description": "A resolved literal, never a name. A name here would have to be resolved again at connect time, which is the time-of-check to time-of-use gap E1-002 exists to close."
+    }
+  }
+}

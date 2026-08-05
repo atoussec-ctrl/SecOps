@@ -91,6 +91,72 @@
       "property": "an absolute name is refused, because the scope pattern has no trailing dot",
       "find": "return not value.endswith(\".\")",
       "replace": "return True"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a refused grant does not burn its nonce",
+      "find": "    replay_cache.consume(str(grant.get(\"nonce\")), now)",
+      "replace": "    pass"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "the replay cache retains a nonce for as long as its grant is acceptable",
+      "find": "if seen >= horizon",
+      "replace": "if seen > horizon"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a replay cache too short to cover the acceptance window is refused",
+      "find": "if self.ttl_seconds < MAXIMUM_LIFETIME_SECONDS + 2 * CLOCK_SKEW_SECONDS:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "the signature is compared in constant time and must match",
+      "find": "if not isinstance(presented, str) or not hmac.compare_digest(presented, expected):",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "an unknown key_id is refused rather than defaulted",
+      "find": "if not isinstance(key_id, str) or key_id not in trusted_keys:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "clock skew is tolerated on the past edge only as far as the constant allows",
+      "find": "if now > expires + skew:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a stretched window is refused even when correctly signed",
+      "find": "if (expires - issued).total_seconds() > MAXIMUM_LIFETIME_SECONDS:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a grant cannot be presented for another run",
+      "find": "if grant.get(\"run_id\") != run_id:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a grant cannot claim a scope snapshot other than the one it references",
+      "find": "if grant.get(\"scope_hash\") != scope_hash:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a revoked run refuses its grants",
+      "find": "if run_id in revoked_runs:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a grant longer than the maximum cannot be issued",
+      "find": "if lifetime_seconds > MAXIMUM_LIFETIME_SECONDS:",
+      "replace": "if False:"
     }
   ]
 }

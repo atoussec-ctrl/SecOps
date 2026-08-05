@@ -1,0 +1,271 @@
+"""Execution grant issuance, verification and replay protection (E1-004).
+
+The contract and its constants come from
+[ADR-012](../../../adrs/012-execution-grants.md). This is the verifier the
+threat model's TM-S-001 asks for: signed, short-lived, audience-bound,
+nonce-protected and tied to an immutable scope snapshot.
+
+Verification order is deliberate and is itself a security property.
+
+1. **Key**, then **signature**. Everything after this reads fields, and reading
+   fields from a document nobody signed is how a forged grant gets to influence
+   a decision.
+2. **Window**, using a clock supplied by the caller rather than read here, so a
+   test can describe an instant instead of waiting for one.
+3. **Audience**, **run** and **scope**: the bindings that stop a valid grant
+   being moved somewhere it was not issued for.
+4. **Revocation**, last. Checking it earlier would let an unsigned document
+   probe which runs exist.
+5. **Nonce**, last of all, because consuming it is the only step with a side
+   effect. A grant refused for any earlier reason must not burn its nonce, or a
+   verifier could be made to invalidate grants it never accepted.
+
+Standard library only. `hmac` and `hashlib` are enough for a symmetric grant
+between two processes in one private environment, and `hmac.compare_digest` is
+what keeps the comparison constant-time.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from typing import Final, Mapping
+
+__all__ = [
+    "CLOCK_SKEW_SECONDS",
+    "GrantRefused",
+    "MAXIMUM_LIFETIME_SECONDS",
+    "REPLAY_CACHE_TTL_SECONDS",
+    "ReplayCache",
+    "canonical_bytes",
+    "issue_grant",
+    "sign_grant",
+    "verify_grant",
+]
+
+# ADR-012. A grant authorises one run between two machines on a private
+# network, so no human latency has to be tolerated.
+MAXIMUM_LIFETIME_SECONDS: Final = 300
+CLOCK_SKEW_SECONDS: Final = 30
+
+# The one arithmetic relationship in the design that is silent when wrong. A
+# cache entry must outlive every moment its grant could still be accepted, or a
+# grant inside its own window has no replay record and can be presented twice.
+REPLAY_CACHE_TTL_SECONDS: Final = MAXIMUM_LIFETIME_SECONDS + 2 * CLOCK_SKEW_SECONDS
+
+_SIGNED_FIELDS: Final = (
+    "grant_version",
+    "grant_id",
+    "nonce",
+    "key_id",
+    "scope_hash",
+    "audience",
+    "run_id",
+    "pinned_addresses",
+    "issued_at",
+    "expires_at",
+    "profile",
+)
+
+
+class GrantRefused(Exception):
+    """A grant was refused. The reason is meant to reach an audit record."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+def _parse_timestamp(value: str, label: str) -> datetime:
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+    except (TypeError, ValueError) as error:
+        raise GrantRefused(f"{label} is not a UTC timestamp: {value!r}") from error
+
+
+def canonical_bytes(grant: Mapping[str, object]) -> bytes:
+    """Serialise the signed fields the way ADR-011 defines.
+
+    Keys sorted, no insignificant whitespace, non-ASCII emitted literally. The
+    signature is excluded because it is computed over this.
+    """
+    missing = [name for name in _SIGNED_FIELDS if name not in grant]
+
+    if missing:
+        raise GrantRefused(f"grant is missing signed fields: {', '.join(missing)}")
+
+    payload = {name: grant[name] for name in _SIGNED_FIELDS}
+
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+
+def sign_grant(grant: Mapping[str, object], key: bytes) -> str:
+    return hmac.new(key, canonical_bytes(grant), hashlib.sha256).hexdigest()
+
+
+def issue_grant(
+    *,
+    grant_id: str,
+    nonce: str,
+    key_id: str,
+    key: bytes,
+    scope_hash: str,
+    audience: str,
+    run_id: str,
+    pinned_addresses: tuple[str, ...],
+    issued_at: datetime,
+    lifetime_seconds: int,
+    profile: str,
+) -> dict[str, object]:
+    """Build and sign a grant, refusing anything the contract cannot express."""
+    if lifetime_seconds <= 0:
+        raise GrantRefused("a grant with no lifetime authorises nothing")
+
+    if lifetime_seconds > MAXIMUM_LIFETIME_SECONDS:
+        raise GrantRefused(
+            f"lifetime {lifetime_seconds}s exceeds the {MAXIMUM_LIFETIME_SECONDS}s maximum",
+        )
+
+    if not pinned_addresses:
+        raise GrantRefused("a grant that pins no address authorises no destination")
+
+    issued = issued_at.astimezone(timezone.utc).replace(microsecond=0)
+
+    grant: dict[str, object] = {
+        "grant_version": "1.0.0",
+        "grant_id": grant_id,
+        "nonce": nonce,
+        "key_id": key_id,
+        "scope_hash": scope_hash,
+        "audience": audience,
+        "run_id": run_id,
+        "pinned_addresses": list(pinned_addresses),
+        "issued_at": issued.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "expires_at": (issued + timedelta(seconds=lifetime_seconds)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+        "profile": profile,
+    }
+
+    grant["signature"] = sign_grant(grant, key)
+
+    return grant
+
+
+@dataclass
+class ReplayCache:
+    """Nonces seen inside the window, and nothing older.
+
+    Bounded on purpose: an entry outside the acceptance window cannot protect
+    anything, because the grant naming it is already refused on expiry.
+    """
+
+    ttl_seconds: int = REPLAY_CACHE_TTL_SECONDS
+    _seen: dict[str, datetime] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        # Stated as an assertion rather than a comment because a shorter TTL
+        # silently reopens the replay window it exists to close.
+        if self.ttl_seconds < MAXIMUM_LIFETIME_SECONDS + 2 * CLOCK_SKEW_SECONDS:
+            raise GrantRefused(
+                f"replay cache ttl {self.ttl_seconds}s is shorter than the window a "
+                f"grant can be accepted in "
+                f"({MAXIMUM_LIFETIME_SECONDS + 2 * CLOCK_SKEW_SECONDS}s), so a live "
+                "grant could outlive its own replay record",
+            )
+
+    def _evict(self, now: datetime) -> None:
+        # Inclusive on purpose. The widest gap between two acceptable
+        # presentations of one grant is exactly lifetime + 2 * skew, which is
+        # exactly the TTL, so an entry aged precisely that much is still the
+        # entry that has to stop the replay. A strict comparison here drops it
+        # one instant too early, and only at that instant.
+        horizon = now - timedelta(seconds=self.ttl_seconds)
+        self._seen = {
+            nonce: seen for nonce, seen in self._seen.items() if seen >= horizon
+        }
+
+    def consume(self, nonce: str, now: datetime) -> None:
+        self._evict(now)
+
+        if nonce in self._seen:
+            raise GrantRefused(f"nonce {nonce} has already been used")
+
+        self._seen[nonce] = now
+
+    def __len__(self) -> int:
+        return len(self._seen)
+
+
+def verify_grant(
+    grant: Mapping[str, object],
+    *,
+    trusted_keys: Mapping[str, bytes],
+    audience: str,
+    run_id: str,
+    scope_hash: str,
+    now: datetime,
+    replay_cache: ReplayCache,
+    revoked_runs: frozenset[str] = frozenset(),
+) -> None:
+    """Refuse unless every condition holds. Returns None or raises."""
+    key_id = grant.get("key_id")
+
+    if not isinstance(key_id, str) or key_id not in trusted_keys:
+        raise GrantRefused(f"key_id {key_id!r} is not trusted")
+
+    presented = grant.get("signature")
+    expected = sign_grant(grant, trusted_keys[key_id])
+
+    if not isinstance(presented, str) or not hmac.compare_digest(presented, expected):
+        raise GrantRefused("signature does not verify")
+
+    issued = _parse_timestamp(str(grant.get("issued_at")), "issued_at")
+    expires = _parse_timestamp(str(grant.get("expires_at")), "expires_at")
+
+    if expires <= issued:
+        raise GrantRefused("expires_at is not after issued_at")
+
+    if (expires - issued).total_seconds() > MAXIMUM_LIFETIME_SECONDS:
+        raise GrantRefused(
+            f"lifetime exceeds the {MAXIMUM_LIFETIME_SECONDS}s maximum",
+        )
+
+    skew = timedelta(seconds=CLOCK_SKEW_SECONDS)
+
+    if now < issued - skew:
+        raise GrantRefused("grant is not valid yet")
+
+    if now > expires + skew:
+        raise GrantRefused("grant has expired")
+
+    if grant.get("audience") != audience:
+        raise GrantRefused(
+            f"grant was issued for audience {grant.get('audience')!r}, presented as {audience!r}",
+        )
+
+    if grant.get("run_id") != run_id:
+        raise GrantRefused(
+            f"grant belongs to run {grant.get('run_id')!r}, presented for {run_id!r}",
+        )
+
+    if grant.get("scope_hash") != scope_hash:
+        raise GrantRefused("grant references a different scope snapshot")
+
+    if run_id in revoked_runs:
+        raise GrantRefused(f"run {run_id} is revoked")
+
+    # Last, because it is the only step with a side effect. A grant refused
+    # above must not burn its nonce, or a verifier could be made to invalidate
+    # grants it never accepted.
+    replay_cache.consume(str(grant.get("nonce")), now)
