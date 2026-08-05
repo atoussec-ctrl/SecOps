@@ -4,6 +4,94 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-004 — Execution grants and replay protection
+
+Status: **implemented against a proposed ADR**. Depends on: E1-003. Phase 1.
+
+### The conflict came first
+
+Conflict 12 blocked this task: the threat model requires signed, short-lived,
+audience-bound, nonce-protected grants (TM-S-001) and no grant contract,
+clock-skew rule, signer trust, revocation or key lifecycle existed.
+
+[`01-operating-manual.md`](01-operating-manual.md) permits two responses to a
+conflict — request a decision, or create a proposed ADR — and forbids only the
+third, choosing silently. [ADR-012](../../adrs/012-execution-grants.md) is that
+proposal, and it is marked **Proposed** rather than Accepted so the
+implementation is visibly standing on an unreviewed decision.
+
+### Decisions, with the reasoning that produced the numbers
+
+**Lifetime 300 seconds, skew 30 seconds.** Current guidance for signed tokens
+puts skew at 30–60 seconds and warns that tolerance beyond five minutes accepts
+replays long after issuance. Both ends here are machines on a private network
+with no human latency to absorb, so the interactive 5–15 minute range does not
+apply. The schema refuses a longer window, so an over-long grant is
+unrepresentable rather than discouraged.
+
+**The replay-cache invariant.** A nonce entry must outlive every moment its
+grant could still be accepted:
+
+```
+cache_ttl >= lifetime + 2 * skew
+```
+
+This is the one arithmetic relationship in the design that is silent when wrong,
+so `ReplayCache` refuses a shorter TTL at construction rather than documenting
+the requirement.
+
+**Verification order is a security property**, not a style choice. Key and
+signature first, because everything after reads fields and reading fields from
+an unsigned document is how a forged grant influences a decision. Revocation
+after the signature, so an unsigned document cannot probe which runs exist.
+Nonce consumption last of all, because it is the only step with a side effect —
+a grant refused earlier must not burn its nonce, or a verifier could be made to
+invalidate grants it never accepted.
+
+### Defect found by the boundary test
+
+The first run failed one test: a replay presented at the last acceptable
+instant was **not** caught.
+
+The widest gap between two acceptable presentations of one grant is exactly
+`lifetime + 2 * skew`, which is exactly the cache TTL. Eviction used a strict
+`>` comparison, so an entry aged precisely that much was dropped one instant
+before the replay it existed to stop. The comparison is now inclusive.
+
+The test was written for that instant and found a real off-by-one there. A
+looser test would have passed over it.
+
+### Fail-closed behavior
+
+- A grant with no lifetime, a lifetime over the maximum, or no pinned address
+  cannot be issued.
+- An unknown `key_id` is a refusal, never a fallback to a default key.
+- `hmac.compare_digest` keeps the signature comparison constant-time.
+- Every signed field is covered by the canonical form; a test edits each one in
+  turn and requires the signature to break.
+
+### Tests executed
+
+`node tools/repo.mjs check:all` — 9 checks, 296 Node tests, 57 Python tests,
+24/24 mutants killed, exit 0.
+
+Eleven mutants were added for this module, including one for the off-by-one
+above, so the eviction comparison cannot silently revert.
+
+### Known limitations and remaining risk
+
+- **ADR-012 is Proposed, not Accepted.** The numbers and the trust model need
+  review. Nothing else in the backlog depends on that review, but this module
+  should not be treated as settled until it happens.
+- Signing is symmetric HMAC. That is right for two processes in one private
+  environment and wrong the moment a third party has to verify without being
+  able to sign. The ADR records this as the alternative considered.
+- Revocation is an in-memory set. Durable revocation belongs with the run state
+  machine (E1-005) and the audit store (conflict 15, still open).
+- Nothing emits an audit event yet. Every refusal carries a reason string built
+  for that purpose, and a test asserts each reason is substantive, but the
+  append-only store does not exist.
+
 ## E1-002 — DNS resolution, pinning and redirect revalidation
 
 Status: **implemented**. Depends on: E1-001. Phase 1.

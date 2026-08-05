@@ -10,7 +10,9 @@ implementing agent applies the **stricter** reading and records the choice.
 
 ## Status
 
-All entries are open. None has an accepted ADR.
+Sixteen entries are open. Entry 12 has a **proposed** ADR ([ADR-012](../../adrs/012-execution-grants.md))
+and entries 4 and 12 are partially addressed. None has an *accepted* ADR, so
+every entry still applies the stricter reading until reviewed.
 
 ## Gate and pipeline semantics
 
@@ -110,10 +112,13 @@ All entries are open. None has an accepted ADR.
     to an immutable scope snapshot (`04-security/01-threat-model.md:57-71`), but
     no grant contract, clock-skew rule, signer trust, revocation or key
     lifecycle is defined.
-    Partially addressed: the canonical serialization a grant would be signed
-    over is now defined in [ADR-011](../../adrs/011-canonical-scope-serialization.md)
-    and reusable. The remaining items are still open.
-    Blocks: E1-004.
+    Addressed by [ADR-012](../../adrs/012-execution-grants.md), status
+    **Proposed**, which defines the grant contract, a 300-second maximum
+    lifetime, 30-second clock skew, the replay-cache window invariant, overlap
+    key rotation and revocation by run. E1-004 is built against it. The ADR
+    needs review and acceptance; until then the implementation stands on a
+    proposal, which the operating manual permits and silent choice does not.
+    Blocks: nothing further.
 
 13. **External scanners and advisory feeds need approval boundaries.**
     Uploading private code is prohibited unless approved
