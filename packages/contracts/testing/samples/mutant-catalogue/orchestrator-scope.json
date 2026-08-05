@@ -247,6 +247,60 @@
       "property": "a refused entry never enters the chain",
       "find": "        _assert_entry_shape(entry)\n\n        self.entries.append(entry)",
       "replace": "        self.entries.append(entry)"
+    },
+    {
+      "file": "audit/recorder.py",
+      "property": "an allowed decision that cannot be recorded is refused rather than returned",
+      "find": "    record(\n        chain,\n        entry_id=entry_id,\n        action=action,\n        outcome=\"allowed\",",
+      "replace": "    _ = (\n        chain,\n        entry_id,\n        action,\n        \"allowed\","
+    },
+    {
+      "file": "audit/recorder.py",
+      "property": "a refusal is written to the record before it is re-raised",
+      "find": "            record(\n                chain,",
+      "replace": "            _skip = (\n                chain,"
+    },
+    {
+      "file": "audit/recorder.py",
+      "property": "a store failure is reported as its own error, not as the operation's",
+      "find": "        raise UnrecordableDecision(action, subject, error.reason) from error",
+      "replace": "        return {}"
+    },
+    {
+      "file": "audit/recorder.py",
+      "property": "a reason too long for the fact vocabulary is truncated, not widened",
+      "find": "    return reason[:200] if reason else \"unspecified\"",
+      "replace": "    return reason if reason else \"unspecified\""
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "a key reused with a different request is refused, never answered from cache",
+      "find": "        if existing.fingerprint != fingerprint:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "a claim still in flight is refused rather than answered",
+      "find": "        if existing.state is OperationState.PENDING:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "a key too short to be unique is refused",
+      "find": "        if not _KEY.fullmatch(key):",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "a completed claim is never released, so one key cannot run twice",
+      "find": "        if record is not None and record.state is OperationState.PENDING:",
+      "replace": "        if record is not None:"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "completing a key twice is refused",
+      "find": "        if record.state is OperationState.COMPLETED:",
+      "replace": "        if False:"
     }
   ]
 }
