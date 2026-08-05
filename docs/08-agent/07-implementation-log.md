@@ -4,6 +4,122 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-002 — DNS resolution, pinning and redirect revalidation
+
+Status: **implemented**. Depends on: E1-001. Phase 1.
+
+### What the module is for
+
+`address_policy` answers a question about a literal. This answers the harder
+one: what a name resolves to, and whether that answer may still be trusted at
+the moment a socket is opened.
+
+The gap between those two moments is the whole problem.
+[`01-threat-model.md`](../04-security/01-threat-model.md) MU-001 names a
+"rebinding domain" among the destinations Scope Guard must reject, and
+[`04-orchestrator-spec.md`](../03-applications/04-orchestrator-spec.md) requires
+that DNS answers are pinned for the execution and that validation repeats for
+redirects and secondary hosts.
+
+A defence that resolves a hostname, checks the answer and then hands the
+*hostname* back to an HTTP client is not a defence: the client resolves again
+and may connect elsewhere. That is time-of-check to time-of-use, and it is how
+CVE-2026-27826 defeated an SSRF fix that had already been written and reviewed.
+The check has to move to the layer that opens the socket, so resolution produces
+a `PinnedTarget` and nothing else. A caller that wants to connect asks the pin,
+never the name.
+
+### Decisions worth recording
+
+**The resolver is injected.** The tests describe answers instead of depending on
+the machine's DNS, which is the only way a rebinding domain can be tested at
+all: a real resolver cannot be asked to change its mind between two calls.
+
+**Every answer is checked, not the first.** A name can return several records
+and a client may pick any of them, so one denied address poisons the set.
+
+**An empty answer is a refusal.** A name that resolves to nothing has given no
+permission to connect anywhere.
+
+**Connect-permitted is not scope-eligible.** The scope record is IPv4-only, but
+`localhost` resolves to `::1` on most machines and that is a safe destination.
+What a signed scope may *contain* and what a resolved answer may *be* are
+different questions with different answers, and conflating them would either
+break every loopback target or let the IPv4-only property be bypassed at
+runtime.
+
+**A redirect is a new authorization decision.** It is resolved and pinned again
+from scratch. If the same name answers differently within one execution, that is
+the rebinding signal and the redirect is refused.
+
+## Revision — mutation testing, and the three defects it found
+
+### Why
+
+[`02-tdd-coverage-mutation.md`](../06-testing/02-tdd-coverage-mutation.md) has
+required ≥80% mutation for security-critical modules since the specification was
+written, and nothing measured it. Coverage says a line ran; it does not say a
+test would have noticed the line being wrong.
+
+### What was built
+
+`check:mutation` applies each catalogued defect to a **copy** of the module tree
+and requires the suite to fail. Nothing is mutated in place, so an interrupted
+run cannot leave a deliberate defect in the working tree.
+
+The catalogue is a contract under
+`packages/contracts/testing/`, so `check:contracts` validates it and its schema
+refuses a `threshold_percent` below the standard — the number can be raised and
+not lowered. Each mutant names the property it removes, so a survivor reads as a
+sentence rather than a line number.
+
+It fails closed in both directions a mutation run can lie. A suite that fails
+before any mutation would make every mutant look killed, so the baseline runs
+first. An anchor that no longer matches its source would run the suite against
+unmutated code and record a kill, so a stale anchor is a failure.
+
+### The first run scored 76%
+
+Three survivors, three different causes.
+
+**Two untested rules.** The case-folding refusals in `address_policy` were
+killed only by the Node differential suite; the Python module had no test of its
+own for them. One of the two turned out to be unreachable: an uppercase hostname
+was already refused as `malformed` by the lowercase-only pattern. That was the
+wrong classification — DNS is case-insensitive, so `WEB.LAB.TEST` names the same
+host as `web.lab.test` and is not malformed. Classification now folds case and
+eligibility decides the spelling, which is the same split the trailing dot
+already used. `LOCALHOST` classified as `public` until the fold was moved ahead
+of the loopback comparison.
+
+**One equivalent mutant.** Replacing the final private-range test with
+`is_private` changed nothing, because every range where they differ is named
+above it. An equivalent mutant cannot be killed and pretending otherwise would
+mean writing a test that asserts nothing. It was replaced with the mistake
+someone actually makes: reaching for `is_private` *first*.
+
+**One real gap.** `192.0.0.0/24` — IETF protocol assignments, including the
+NAT64/DNS64 discovery pair — is `is_private=True` in Python and classified
+`public` here, and no vector distinguished them. Falling through to `public`
+denied it for the wrong reason, and a reason that happens to be right is not a
+rule. It is now named `reserved` with two vectors.
+
+The catalogue now scores 13/13.
+
+### Repository hygiene, found by the same work
+
+A multi-line catalogue anchor failed to match, and the cause was that three
+files written on this machine had CRLF line endings in a repository where the
+other 167 were LF. One had already been merged. All are normalised, and
+`tests/foundation/repository-hygiene.test.mjs` now asserts LF endings and a
+trailing newline across every text file, with a guard that the sweep found the
+repository at all.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 288 Node tests, 31 Python tests,
+13/13 mutants killed, exit 0.
+
 ## Revision — the runtime was wider than the contract
 
 ### Why this was looked for

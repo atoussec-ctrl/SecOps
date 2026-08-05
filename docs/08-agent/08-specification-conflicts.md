@@ -48,6 +48,11 @@ All entries are open. None has an accepted ADR.
    subprocess execution is understated, because V8 coverage in the parent
    cannot attribute a child's run — `tools/repo.mjs` measures 73.99% line while
    its behavior is fully tested.
+   Partially addressed: the **mutation** half of this entry no longer needs a
+   decision. `02-tdd-coverage-mutation.md` states ≥80% for security-critical
+   modules, which is a number, so `check:mutation` enforces it against a
+   catalogue whose schema refuses a threshold below the standard. The coverage
+   percentage and the triage deadlines are still undecided.
    Blocks: E0-003, E0-007.
 
 5. **Provenance timing is inconsistent.** Stage 4 creates provisional
