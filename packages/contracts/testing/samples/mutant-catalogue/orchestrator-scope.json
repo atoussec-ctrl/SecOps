@@ -157,6 +157,42 @@
       "property": "a grant longer than the maximum cannot be issued",
       "find": "if lifetime_seconds > MAXIMUM_LIFETIME_SECONDS:",
       "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a grant naming a profile the contract forbids is refused",
+      "find": "if grant.get(\"profile\") not in _PROFILES:",
+      "replace": "if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a pinned address must be a resolved literal, never a name",
+      "find": "            or not _ADDRESS.fullmatch(address)",
+      "replace": "            or False"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a signed grant is still checked against the contract shape",
+      "find": "    _assert_contract_shape(grant)\n\n    issued = _parse_timestamp(",
+      "replace": "    pass\n\n    issued = _parse_timestamp("
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "the issuer cannot mint a document the contract rejects",
+      "find": "    _assert_contract_shape(grant)\n\n    return grant",
+      "replace": "    pass\n\n    return grant"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "a grant carrying an unknown field is refused",
+      "find": "    if unknown:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "duplicate pinned addresses are refused",
+      "find": "    if len(set(addresses)) != len(addresses):",
+      "replace": "    if False:"
     }
   ]
 }
