@@ -16,6 +16,11 @@ same canonical form the scope digest and the audit chain use
 ([ADR-011](../../../adrs/011-canonical-scope-serialization.md)), so two
 descriptions of one request agree byte for byte across languages.
 
+Records are retained for a bounded window and no longer. An unbounded store is
+a leak in a service meant to run for the length of an engagement, and a record
+kept forever answers a key reused years later with a stale result. The bound is
+derived rather than picked: see `RETENTION_SECONDS`.
+
 Standard library only.
 """
 
@@ -25,17 +30,32 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Final, Mapping
 
 __all__ = [
     "IdempotencyConflict",
     "IdempotencyStore",
+    "MAXIMUM_RUN_DURATION_SECONDS",
     "OperationState",
+    "RETENTION_SECONDS",
     "request_fingerprint",
 ]
 
 _KEY: Final = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{7,63}$")
+
+# The ceiling the scope contract puts on max_duration_seconds. A run cannot last
+# longer than this, so a retry arriving later than this plus the operation's own
+# window is not a retry of anything live.
+MAXIMUM_RUN_DURATION_SECONDS: Final = 3600
+
+# Retention has to outlive every moment a legitimate retry could still arrive
+# for an operation that is still meaningful. A record that expires while its run
+# is alive lets a repeated start begin a second one, which is the failure the
+# key exists to prevent — the same shape as the replay cache invariant in
+# ADR-012, derived from the contract rather than chosen.
+RETENTION_SECONDS: Final = 2 * MAXIMUM_RUN_DURATION_SECONDS
 
 
 class OperationState(Enum):
@@ -66,16 +86,38 @@ def request_fingerprint(request: Mapping[str, Any]) -> str:
 class _Record:
     fingerprint: str
     state: OperationState
+    claimed_at: datetime
     result: Any = None
 
 
 @dataclass
 class IdempotencyStore:
-    """Keys claimed by this service, each bound to one request."""
+    """Keys claimed by this service, each bound to one request, each expiring."""
 
+    ttl_seconds: int = RETENTION_SECONDS
     _records: dict[str, _Record] = field(default_factory=dict)
 
-    def claim(self, key: str, request: Mapping[str, Any]) -> tuple[bool, Any]:
+    def __post_init__(self) -> None:
+        # Asserted rather than commented, because a shorter retention silently
+        # reopens the duplicate-start it exists to close.
+        if self.ttl_seconds < MAXIMUM_RUN_DURATION_SECONDS:
+            raise IdempotencyConflict(
+                f"retention of {self.ttl_seconds}s is shorter than the "
+                f"{MAXIMUM_RUN_DURATION_SECONDS}s a run may last, so a key could "
+                "expire while its operation is still alive",
+            )
+
+    def _evict(self, now: datetime) -> None:
+        horizon = now - timedelta(seconds=self.ttl_seconds)
+        self._records = {
+            key: record
+            for key, record in self._records.items()
+            if record.claimed_at >= horizon
+        }
+
+    def claim(
+        self, key: str, request: Mapping[str, Any], now: datetime
+    ) -> tuple[bool, Any]:
         """Claim ``key`` for ``request``.
 
         Returns ``(True, None)`` when the caller should do the work, and
@@ -90,11 +132,13 @@ class IdempotencyStore:
             # accident makes every guarantee below coincidental.
             raise IdempotencyConflict(f"idempotency key {key!r} is not well formed")
 
+        self._evict(now)
+
         fingerprint = request_fingerprint(request)
         existing = self._records.get(key)
 
         if existing is None:
-            self._records[key] = _Record(fingerprint, OperationState.PENDING)
+            self._records[key] = _Record(fingerprint, OperationState.PENDING, now)
             return True, None
 
         if existing.fingerprint != fingerprint:

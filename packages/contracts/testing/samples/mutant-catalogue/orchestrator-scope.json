@@ -445,6 +445,18 @@
       "property": "the rate window slides, so the limit cannot be doubled across a second boundary",
       "find": "        horizon = now - timedelta(seconds=1)\n        self._window = [issued for issued in self._window if issued > horizon]",
       "replace": "        horizon = now.replace(microsecond=0)\n        self._window = [issued for issued in self._window if issued >= horizon]"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "idempotency records expire, so the store does not grow without bound",
+      "find": "        self._evict(now)\n\n        fingerprint = request_fingerprint(request)",
+      "replace": "        fingerprint = request_fingerprint(request)"
+    },
+    {
+      "file": "runs/idempotency.py",
+      "property": "retention outlives the longest run a scope may authorise",
+      "find": "        if self.ttl_seconds < MAXIMUM_RUN_DURATION_SECONDS:",
+      "replace": "        if False:"
     }
   ]
 }
