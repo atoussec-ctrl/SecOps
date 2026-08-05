@@ -401,7 +401,7 @@
     {
       "file": "runs/budgets.py",
       "property": "requests are paid for before they are issued",
-      "find": "        if self._requests_this_second >= self.limits[\"max_requests_per_second\"]:",
+      "find": "        if len(self._window) >= self.limits[\"max_requests_per_second\"]:",
       "replace": "        if False:"
     },
     {
@@ -439,6 +439,12 @@
       "property": "remaining time is never reported as negative",
       "find": "        return max(0, int((deadline - now).total_seconds()))",
       "replace": "        return int((deadline - now).total_seconds())"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "the rate window slides, so the limit cannot be doubled across a second boundary",
+      "find": "        horizon = now - timedelta(seconds=1)\n        self._window = [issued for issued in self._window if issued > horizon]",
+      "replace": "        horizon = now.replace(microsecond=0)\n        self._window = [issued for issued in self._window if issued >= horizon]"
     }
   ]
 }

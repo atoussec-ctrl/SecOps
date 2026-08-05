@@ -85,8 +85,17 @@ class RunBudget:
     limits: Mapping[str, int]
     started_at: datetime
 
-    _requests_this_second: int = 0
-    _second: datetime | None = None
+    # A sliding window log rather than a per-second counter. A fixed window
+    # passes up to twice the limit across its edge: five requests at 12:00:00.999
+    # and five more at 12:00:01.000 is ten requests in a millisecond against a
+    # budget of five per second, which was measured here before this changed.
+    #
+    # The usual objection to a log is memory, and it does not apply: the scope
+    # contract caps max_requests_per_second at 50, so the window holds at most
+    # that many timestamps. A token bucket would be the wrong choice for the
+    # opposite reason — it permits controlled bursts by design, and the
+    # authorised rate is exactly what must not be exceeded.
+    _window: list[datetime] = field(default_factory=list)
     _in_flight: int = 0
     _bytes: int = 0
     _records: int = 0
@@ -116,19 +125,19 @@ class RunBudget:
         """Pay for one request before it is issued."""
         self._assert_live(now)
 
-        second = now.replace(microsecond=0)
+        # Anything a full second old no longer counts against the rate. The
+        # boundary is exclusive, so a request exactly one second later is a new
+        # request rather than a replay of the old one.
+        horizon = now - timedelta(seconds=1)
+        self._window = [issued for issued in self._window if issued > horizon]
 
-        if self._second != second:
-            self._second = second
-            self._requests_this_second = 0
-
-        if self._requests_this_second >= self.limits["max_requests_per_second"]:
+        if len(self._window) >= self.limits["max_requests_per_second"]:
             self._refuse(
                 f"run exceeded its {self.limits['max_requests_per_second']} "
                 "requests per second budget",
             )
 
-        self._requests_this_second += 1
+        self._window.append(now)
 
     def acquire_slot(self, now: datetime) -> None:
         """Take a concurrency slot before an adapter starts."""
