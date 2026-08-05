@@ -94,9 +94,9 @@
     },
     {
       "file": "grants/execution_grant.py",
-      "property": "a refused grant does not burn its nonce",
-      "find": "    replay_cache.consume(str(grant.get(\"nonce\")), now)",
-      "replace": "    pass"
+      "property": "a refused grant does not burn its nonce, because the check never consumes",
+      "find": "    nonce = str(grant.get(\"nonce\"))",
+      "replace": "    nonce = str(grant.get(\"nonce\")); replay_cache.consume(nonce, now)"
     },
     {
       "file": "grants/execution_grant.py",
@@ -301,6 +301,24 @@
       "property": "completing a key twice is refused",
       "find": "        if record.state is OperationState.COMPLETED:",
       "replace": "        if False:"
+    },
+    {
+      "file": "grants/execution_grant.py",
+      "property": "verification checks the nonce without consuming it, so a refused acceptance leaves the grant presentable",
+      "find": "    replay_cache.assert_unused(nonce, now)",
+      "replace": "    replay_cache.consume(nonce, now)"
+    },
+    {
+      "file": "grants/authorisation.py",
+      "property": "the nonce is consumed only after the acceptance is on the record",
+      "find": "    replay_cache.consume(nonce, now)",
+      "replace": "    pass"
+    },
+    {
+      "file": "grants/authorisation.py",
+      "property": "acceptance goes through the recorder rather than calling the verifier directly",
+      "find": "    nonce = guard(",
+      "replace": "    nonce = _direct("
     }
   ]
 }

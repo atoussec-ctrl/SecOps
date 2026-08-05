@@ -4,6 +4,57 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — an audit outage could destroy valid grants
+
+### Defect fixed
+
+Wiring `guard` into grant acceptance exposed an ordering defect that neither
+module had alone.
+
+`verify_grant` consumed the nonce as part of verification. `guard` runs the
+check, then writes the record, then lets the caller act. Compose them and an
+audit-store failure produced this:
+
+1. the check runs and **burns the nonce**;
+2. the record fails;
+3. the operation is refused — correctly, per "audit-store failure blocks
+   privileged execution";
+4. the grant can **never be presented again**, because its nonce is spent.
+
+An outage in the store that exists to describe work became a way to prevent it.
+Demonstrated before fixing: after a failed acceptance, re-presenting the same
+valid grant returned `nonce ... has already been used`.
+
+Verification now has no side effect. `ReplayCache.assert_unused` checks,
+`consume` commits, and `verify_grant` returns the nonce rather than spending it.
+`grants/authorisation.py` composes the three steps in the order that is correct
+and not obvious: **verify, record, commit**.
+
+### Two tests changed, and they were right to fail
+
+`test_a_grant_is_single_use` and the last-instant replay test both broke,
+because single use is a property of **acceptance**, not of verification. They
+now exercise the full path, and a new test asserts the distinction directly:
+verifying twice consumes nothing, and accepting once does.
+
+### The window that remains
+
+Between the check and the commit the nonce is unclaimed, so two concurrent
+acceptances of one grant could both verify. Nothing here is concurrent and the
+in-memory store makes it unreachable, but the durable implementation will not.
+The audit append and the nonce consumption belong in one transaction, which is
+what [ADR-005](../../adrs/005-postgresql-outbox.md) already chose PostgreSQL
+for. Recorded in the module rather than left for someone to find.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 307 Node tests, 104 Python tests,
+51/51 mutants killed, exit 0.
+
+One catalogued mutant no longer matched its source, which is the stale-anchor
+check doing its job: the property it described had moved from the verifier to
+the composition. It was restated rather than deleted.
+
 ## E1-005 (part) — Fail-closed recording and idempotent operations
 
 Status: **partial**. Depends on: E1-004. Phase 1.

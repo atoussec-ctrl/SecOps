@@ -274,12 +274,21 @@ class ReplayCache:
             nonce: seen for nonce, seen in self._seen.items() if seen >= horizon
         }
 
-    def consume(self, nonce: str, now: datetime) -> None:
+    def assert_unused(self, nonce: str, now: datetime) -> None:
+        """Check without consuming.
+
+        Verification uses this so a grant that is never accepted keeps its
+        nonce. Burning it during a check that the caller then refuses to act on
+        would let an audit-store outage permanently destroy valid grants.
+        """
         self._evict(now)
 
         if nonce in self._seen:
             raise GrantRefused(f"nonce {nonce} has already been used")
 
+    def consume(self, nonce: str, now: datetime) -> None:
+        """Mark the nonce used. This is the commit, and it happens last."""
+        self.assert_unused(nonce, now)
         self._seen[nonce] = now
 
     def __len__(self) -> int:
@@ -296,8 +305,17 @@ def verify_grant(
     now: datetime,
     replay_cache: ReplayCache,
     revoked_runs: frozenset[str] = frozenset(),
-) -> None:
-    """Refuse unless every condition holds. Returns None or raises."""
+) -> str:
+    """Refuse unless every condition holds; return the nonce to be consumed.
+
+    Verification has **no side effect**. The nonce is checked and not consumed,
+    because a grant whose acceptance is then refused — by an audit-store failure,
+    say — must remain presentable. Consuming during the check let a flapping
+    store destroy valid grants permanently.
+
+    `grants.authorisation.authorise` is the composition that gets the order
+    right: verify, record, then consume.
+    """
     key_id = grant.get("key_id")
 
     if not isinstance(key_id, str) or key_id not in trusted_keys:
@@ -349,7 +367,11 @@ def verify_grant(
     if run_id in revoked_runs:
         raise GrantRefused(f"run {run_id} is revoked")
 
-    # Last, because it is the only step with a side effect. A grant refused
-    # above must not burn its nonce, or a verifier could be made to invalidate
-    # grants it never accepted.
-    replay_cache.consume(str(grant.get("nonce")), now)
+    # Last, and checked rather than consumed. A grant refused above must not
+    # burn its nonce, or a verifier could be made to invalidate grants it never
+    # accepted; and a grant whose acceptance is refused afterwards must stay
+    # presentable, or an audit-store outage becomes a way to destroy valid work.
+    nonce = str(grant.get("nonce"))
+    replay_cache.assert_unused(nonce, now)
+
+    return nonce
