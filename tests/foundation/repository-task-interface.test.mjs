@@ -160,6 +160,27 @@ test("E1-001 a missing interpreter fails the orchestrator check", () => {
   assert.match(result.stderr, /failed to start/);
 });
 
+// Mutation testing is the only check here that can pass by accident in two
+// directions: a suite that fails before anything is mutated makes every mutant
+// look killed, and a catalogue anchor that no longer matches runs the suite
+// against unmutated code and records the mutant as killed anyway.
+test("E1-002 help lists the mutation check and it reports a real score", () => {
+  assert.match(runTaskInterface(["help"]).stdout, /check:mutation/);
+
+  const result = runTaskInterface(["check:mutation"]);
+
+  assert.equal(result.status, 0, result.stderr);
+
+  const score = result.stdout.match(/(\d+)\/(\d+) mutants killed \((\d+)%\)/);
+
+  assert.ok(score, `no mutation score in the output:\n${result.stdout}`);
+  assert.ok(Number(score[2]) >= 10, `only ${score[2]} mutants catalogued`);
+  assert.ok(
+    Number(score[3]) >= 80,
+    `mutation score ${score[3]}% is below the testing standard`,
+  );
+});
+
 test("E0-007 help lists the workflow check and it passes on this repository", () => {
   assert.match(runTaskInterface(["help"]).stdout, /check:workflows/);
 

@@ -12,6 +12,7 @@ import { checkContracts } from "./contracts-check.mjs";
 import { checkDocumentation } from "./docs-check.mjs";
 import { evaluatePrerequisites, validateManifest } from "./prerequisites.mjs";
 import { parseJson } from "./schema.mjs";
+import { checkMutation } from "./mutation.mjs";
 import { checkExposure } from "./topology.mjs";
 import { checkWorkflows } from "./workflows.mjs";
 
@@ -112,6 +113,14 @@ const tasks = new Map([
     },
   ],
   [
+    "check:mutation",
+    {
+      phase: "Phase 1",
+      summary: "Assert the orchestrator suite detects each catalogued defect.",
+      run: () => report("Mutation", checkMutation(repositoryRoot)),
+    },
+  ],
+  [
     "check:all",
     {
       phase: "Phase 0",
@@ -130,6 +139,7 @@ const BOOTSTRAP_ORDER = [
   "check:workflows",
   "check:foundation",
   "check:orchestrator",
+  "check:mutation",
 ];
 
 function asProblems(problems) {

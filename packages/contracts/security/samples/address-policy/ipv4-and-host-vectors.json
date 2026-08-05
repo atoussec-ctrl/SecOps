@@ -241,6 +241,20 @@
       "rationale": "Inside 0.0.0.0/8, this network. Not a destination."
     },
     {
+      "input": "192.0.0.1",
+      "kind": "ipv4",
+      "classification": "reserved",
+      "in_scope_eligible": false,
+      "rationale": "IETF protocol assignments. Assigned to a protocol rather than a host, so no engagement owns one. Python reports it as private, which is why it needs a vector of its own."
+    },
+    {
+      "input": "192.0.0.170",
+      "kind": "ipv4",
+      "classification": "reserved",
+      "in_scope_eligible": false,
+      "rationale": "NAT64/DNS64 discovery address inside the protocol assignment block."
+    },
+    {
       "input": "localhost",
       "kind": "hostname",
       "classification": "loopback",

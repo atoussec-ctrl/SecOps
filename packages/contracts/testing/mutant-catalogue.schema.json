@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/testing/mutant-catalogue.schema.json",
+  "title": "Mutant Catalogue",
+  "description": "Deliberate defects that the test suite of a security-critical module must detect. docs/06-testing/02-tdd-coverage-mutation.md requires at least 80% mutation score for such modules; this is the catalogue that score is measured against. Each entry names one safety property by describing the edit that removes it, so a surviving mutant reads as a sentence about what is no longer guaranteed rather than as a line number.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalogue_version", "suite", "threshold_percent", "mutants"],
+  "properties": {
+    "catalogue_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "command"],
+      "properties": {
+        "root": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Repository-relative directory copied to a temporary tree before mutating. Nothing is ever edited in place."
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "description": "Argument vector, never a shell string."
+        }
+      }
+    },
+    "threshold_percent": {
+      "type": "integer",
+      "minimum": 80,
+      "maximum": 100,
+      "description": "Lower bound from the testing standard. It may be raised here and never lowered below the standard, because the schema refuses a smaller number."
+    },
+    "mutants": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/mutant" }
+    }
+  },
+  "$defs": {
+    "mutant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "property", "find", "replace"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "property": {
+          "type": "string",
+          "minLength": 15,
+          "maxLength": 200,
+          "description": "What stops being guaranteed if this edit survives. Written so the failure report is readable without opening the source."
+        },
+        "find": { "type": "string", "minLength": 3, "maxLength": 400 },
+        "replace": { "type": "string", "minLength": 1, "maxLength": 400 }
+      }
+    }
+  }
+}
