@@ -68,6 +68,22 @@ class Run:
         if not self.state:
             self.state = str(self.lifecycle["initial_state"])
 
+        declared = {
+            str(entry["state"]) for entry in self.lifecycle["states"]  # type: ignore[index]
+        }
+
+        # Refused here rather than discovered later. A run restored from storage
+        # with a state the contract no longer declares — after a rename, or a
+        # corrupted row — otherwise becomes silently unkillable: every
+        # transition lookup misses, so nothing is permitted and the refusal
+        # blames the transition instead of the data.
+        if self.state not in declared:
+            raise RunRefused(
+                f"run {self.run_id} carries state {self.state!r}, which the "
+                f"lifecycle does not declare; known states: "
+                f"{', '.join(sorted(declared))}",
+            )
+
         self._terminal = {
             str(entry["state"])
             for entry in self.lifecycle["states"]  # type: ignore[index]
