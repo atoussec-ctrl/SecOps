@@ -4,6 +4,51 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — the idempotency store never forgot anything
+
+### Defect fixed
+
+Ten thousand completed operations left ten thousand records, and there was no
+method that would ever remove one:
+
+```
+keys retained after 10000 completed operations: 10000
+any expiry method?: none
+```
+
+Two problems in one. An unbounded store is a leak in a service meant to run for
+the length of an engagement. And a record kept forever answers a key reused much
+later with a **stale result**, which is the opposite of what the fingerprint
+check exists to prevent.
+
+The uncomfortable part is that this is the same class of defect the replay cache
+gets right two modules away, with an asserted invariant and a derived TTL — and
+the research that shaped this module listed "an expiration timestamp" among the
+fields a standard idempotency record carries. It was written down and not built.
+
+### The bound is derived, not chosen
+
+The scope contract caps `max_duration_seconds` at 3600, so a run cannot last
+longer than an hour. Retention is twice that, and `IdempotencyStore` refuses a
+TTL shorter than the longest run a scope may authorise — because a record that
+expires while its run is alive lets a repeated start begin a second one, which
+is precisely the failure the key exists to prevent.
+
+Same shape as the ADR-012 replay-cache invariant: a number that follows from the
+contract rather than from taste, asserted at construction rather than commented.
+
+### Two of my own test mistakes
+
+The bound test claimed two thousand records at one-second intervals, all of
+which fit inside a two-hour window, so it asserted nothing. They are now spread
+across five hours. And the appended class landed after `if __name__ ==
+"__main__"`, which ran but read badly.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 154 Python tests,
+74/74 mutants killed, exit 0.
+
 ## Revision — the rate budget could be doubled
 
 ### Defect fixed
