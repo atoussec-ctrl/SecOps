@@ -485,7 +485,7 @@
     {
       "file": "runs/kill_switch.py",
       "property": "an adapter silent past its timeout stops the run",
-      "find": "        if silent > self.timeout_seconds:",
+      "find": "        if silent > self.timeout_seconds or run_id in self._missed:",
       "replace": "        if False:"
     },
     {
@@ -521,8 +521,32 @@
     {
       "file": "runs/kill_switch.py",
       "property": "a sweep reports every stale run",
-      "find": "            run_id for run_id, last in self._last_beat.items() if last < horizon",
-      "replace": "            run_id for run_id, last in self._last_beat.items() if False"
+      "find": "        return sorted(self._missed)",
+      "replace": "        return []"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a late report does not revive a run that already missed its heartbeat",
+      "find": "        if run_id in self._missed:\n            raise RunStopped(\n                f\"run {run_id} already missed its heartbeat; a late report does \"",
+      "replace": "        if False:\n            raise RunStopped(\n                f\"run {run_id} already missed its heartbeat; a late report does \""
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a beat past the timeout latches the miss even before a sweep runs",
+      "find": "        if (now - self._last_beat[run_id]).total_seconds() > self.timeout_seconds:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a sweep latches every run it observes stale",
+      "find": "            if last < horizon:\n                self._missed.add(run_id)",
+      "replace": "            if last < horizon:\n                pass"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "only forgetting a run clears its latched miss",
+      "find": "        self._missed.discard(run_id)",
+      "replace": "        pass"
     }
   ]
 }

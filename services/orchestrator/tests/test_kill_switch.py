@@ -194,6 +194,72 @@ class Heartbeats(unittest.TestCase):
         self.assertEqual(monitor.stale(AT + timedelta(days=1)), [])
 
 
+class StalenessLatches(unittest.TestCase):
+    """The race this closes: a sweep sees a run stale, and before it acts the
+    adapter reports again. Without a latch the kill never happens, and an
+    intermittently silent adapter evades the control for as long as it likes."""
+
+    def test_a_late_report_does_not_revive_a_stale_run(self) -> None:
+        monitor = HeartbeatMonitor()
+        monitor.register("run.0001", AT)
+        late = AT + timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS + 1)
+
+        self.assertEqual(monitor.stale(late), ["run.0001"])
+
+        with self.assertRaises(RunStopped) as raised:
+            monitor.beat("run.0001", late)
+
+        self.assertIn("does not revive", raised.exception.reason)
+        self.assertEqual(monitor.stale(late), ["run.0001"])
+
+    def test_a_beat_after_the_timeout_latches_even_without_a_sweep(self) -> None:
+        # The sweep may not have run yet. The breach is visible here first.
+        monitor = HeartbeatMonitor()
+        monitor.register("run.0001", AT)
+
+        with self.assertRaises(RunStopped) as raised:
+            monitor.beat("run.0001", AT + timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS + 1))
+
+        self.assertIn("reported after its", raised.exception.reason)
+        self.assertTrue(monitor.missed("run.0001"))
+
+    def test_an_intermittently_silent_adapter_cannot_evade_the_control(self) -> None:
+        monitor = HeartbeatMonitor()
+        monitor.register("run.0001", AT)
+        moment = AT
+
+        for _ in range(3):
+            moment += timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS + 1)
+            with self.assertRaises(RunStopped):
+                monitor.beat("run.0001", moment)
+
+        self.assertEqual(monitor.stale(moment), ["run.0001"])
+
+    def test_a_healthy_run_is_never_latched(self) -> None:
+        monitor = HeartbeatMonitor()
+        monitor.register("run.0001", AT)
+
+        for tick in range(1, 20):
+            monitor.beat("run.0001", AT + timedelta(seconds=tick * HEARTBEAT_INTERVAL_SECONDS))
+
+        self.assertFalse(monitor.missed("run.0001"))
+        self.assertEqual(monitor.stale(AT + timedelta(seconds=19 * HEARTBEAT_INTERVAL_SECONDS)), [])
+
+    def test_only_forgetting_clears_a_latch(self) -> None:
+        # A run that ended has been accounted for; one that merely started
+        # reporting again has not.
+        monitor = HeartbeatMonitor()
+        monitor.register("run.0001", AT)
+        monitor.stale(AT + timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS + 1))
+
+        self.assertTrue(monitor.missed("run.0001"))
+
+        monitor.forget("run.0001")
+
+        self.assertFalse(monitor.missed("run.0001"))
+        self.assertEqual(monitor.stale(AT + timedelta(days=1)), [])
+
+
 class TheTimeoutIsBounded(unittest.TestCase):
     def test_a_timeout_under_two_intervals_is_refused(self) -> None:
         # One lost beat would stop a healthy run.
