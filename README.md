@@ -64,8 +64,8 @@ runtime services are not yet built.
 | JSON Schema contracts | 12 |
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
-| Foundation test suites | 19 |
-| Tests | 296 Node, 57 Python, all passing |
+| Foundation test suites | 20 |
+| Tests | 299 Node, 57 Python, all passing |
 
 ### Built and verified
 
@@ -105,7 +105,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-001 Special-range address policy | 77 vectors, the Python classifier and a 690-input differential suite | complete |
 | E1-002 DNS resolution and pinning | resolver-injected pinning, redirect revalidation | proxy CONNECT targets |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
-| E1-004 Execution grants and replay protection | contract, verifier, replay cache, ADR-012 | ADR-012 acceptance; audit wiring |
+| E1-004 Execution grants and replay protection | contract, verifier, replay cache, differential suite, ADR-012 | ADR-012 acceptance; audit wiring |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -274,7 +274,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               19 acceptance suites, 296 tests
+    ├── foundation/               20 acceptance suites, 299 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -509,7 +509,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 24/24 across the Scope Guard and grant modules.
+  **Enforced** by `check:mutation`, currently 30/30 across the Scope Guard and grant modules.
 
 ### Mutation testing, and why it is a catalogue
 
