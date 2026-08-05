@@ -4,6 +4,81 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-005 — Budgets, and the task is complete
+
+Status: **complete**. Depends on: E1-004. Phase 1.
+
+### Defect fixed first
+
+A `Run` accepted any string as its state. Nothing validated it, so a run
+restored from storage with a state the contract no longer declares — after a
+rename, or from a corrupted row — became **silently unkillable**: every
+transition lookup missed, nothing was permitted, and the refusal blamed the
+transition rather than the data. The state is now checked at construction and an
+undeclared one is refused by name.
+
+That matters more for E1-008 than it does today: restoring runs from PostgreSQL
+is exactly when a stale state string arrives.
+
+### Charge on issue, not on completion
+
+A request is paid for before it leaves and a concurrency slot is taken before
+the adapter starts. Charging on the response means a request that hangs, times
+out or is never read costs nothing — and the scanner exhausting a target is
+precisely the one whose responses stop arriving. Current rate-limiting guidance
+says the same: reserve capacity at ingress rather than egress.
+
+Response bytes are charged incrementally for the same reason, so a response
+cannot exceed its bound by arriving slowly.
+
+### Exceeding is a refusal, and it is final
+
+`TM-D-001` asks for budgets against a scanner exhausting the host or the target.
+A budget that logs and continues describes what happened rather than limiting
+it, so the first refusal closes the run: every other budget refuses afterwards
+with "already exhausted". A limit that only slows work down is not a limit.
+
+### Three ways a budget stops being one, each with a test
+
+- **A negative measurement.** Reporting minus five hundred bytes would buy
+  budget back, so a negative count is refused as not a measurement.
+- **A double release.** Releasing a concurrency slot more often than acquiring
+  it would manufacture capacity the scope never granted, so the counter floors
+  at zero.
+- **Negative remaining time.** An overrun reported as spare time is worse than
+  no answer, so `remaining_seconds` floors at zero too.
+
+### Wall time, including pauses
+
+The run lifecycle already said budgets keep accruing while paused. The duration
+budget is measured against wall time from the start, because the engagement
+window an operator authorised does not pause when the adapter does.
+
+### No way to raise a budget
+
+The limits are read once from the signed scope and there is no method that
+changes them. Raising one mid-run would mean spending authority the scope did
+not grant. A test asserts the absence, since an absence is what someone adds a
+setter to without noticing.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 147 Python tests,
+71/71 mutants killed, exit 0. Twelve mutants added.
+
+### E1-005 is complete
+
+Run state machine, idempotency and budgets, with the audit chain and fail-closed
+recording that conflict 15 had to be answered for first.
+
+### Known limitations and remaining risk
+
+- Nothing calls the budget yet. It is enforced by whoever invokes an adapter,
+  and the adapter registry is E1-007.
+- Revocation still reaches the grant verifier as a `frozenset` argument rather
+  than being read from run state. That wiring is E1-006, with the heartbeat.
+- Everything in the run plane is in memory. Durability is E1-008.
+
 ## E1-005 (part) — Run state machine
 
 Status: **implemented**. Depends on: E1-004. Phase 1.

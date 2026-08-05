@@ -65,7 +65,7 @@ runtime services are not yet built.
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
 | Foundation test suites | 22 |
-| Tests | 317 Node, 127 Python, all passing |
+| Tests | 317 Node, 147 Python, all passing |
 
 ### Built and verified
 
@@ -106,7 +106,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-002 DNS resolution and pinning | resolver-injected pinning, redirect revalidation | proxy CONNECT targets |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-004 Execution grants and replay protection | contract, verifier, replay cache, differential suite, ADR-012 | ADR-012 acceptance; audit wiring |
-| E1-005 Run plane | audit chain and ADR-013, fail-closed recording wired into grant acceptance, idempotency with request fingerprints, run state machine with kill from every state | budgets |
+| E1-005 Run plane | **complete** — audit chain, fail-closed recording, idempotency, run state machine, budgets charged on issue | wiring budgets to adapter invocation (E1-007) |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -510,7 +510,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 59/59 across the Scope Guard, grant, audit and run modules.
+  **Enforced** by `check:mutation`, currently 71/71 across the Scope Guard, grant, audit and run modules.
 
 ### Mutation testing, and why it is a catalogue
 
