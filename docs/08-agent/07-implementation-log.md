@@ -4,6 +4,59 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — a signature is not a well-formedness proof
+
+### Defect fixed
+
+The grant contract states that destructive tooling has no representation and
+that a pinned address is a resolved literal, never a name. Both were true of the
+JSON Schema and neither was true of the code.
+
+A JSON Schema constrains documents that are validated against it. Nothing
+validated a grant on the runtime path, so the guarantees held only for documents
+that happened to pass through a validator. Demonstrated rather than reasoned
+about:
+
+- `issue_grant` minted a grant that the schema rejected on **eight fields at
+  once**, including `profile: "destructive"` and a hostname in
+  `pinned_addresses`.
+- `verify_grant` then **accepted that grant**, because it was signed by a
+  trusted key.
+
+The second is the serious half. A signature says who wrote a document; it never
+says the document is well formed. The verifier was treating provenance as
+validity.
+
+Both paths now assert the contract shape. In `verify_grant` the check sits
+immediately after the signature, which keeps the stated ordering honest: nothing
+reads fields to make a decision before knowing who wrote them.
+
+### Why the contract is restated in Python
+
+Two statements of one rule drift, and the drift is silent in the dangerous
+direction. `tests/foundation/execution-grant-differential.test.mjs` runs both
+over the same 54 documents — each one field bent in one direction, valid cases
+included so a restatement that refused everything could not pass — and requires
+identical verdicts.
+
+One assertion is stated separately, as with the address policy: **the verifier
+must never accept what the contract rejects.** Verified to bite by weakening the
+profile check, which produces
+`profile = "destructive": contract rejects, verifier accepts`.
+
+### The CRLF source, finally identified
+
+Line endings drifted again, and this time the cause is worth recording:
+`pathlib.Path.write_text` translates `\n` to `\r\n` on Windows unless
+`newline="\n"` is passed. Earlier entries blamed the editor; the Python helper
+scripts were doing it too. The hygiene test caught it both times, and a
+multi-line mutant anchor failed to match as a second symptom.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 299 Node tests, 57 Python tests,
+30/30 mutants killed, exit 0. Six mutants added for the shape checks.
+
 ## E1-004 — Execution grants and replay protection
 
 Status: **implemented against a proposed ADR**. Depends on: E1-003. Phase 1.
