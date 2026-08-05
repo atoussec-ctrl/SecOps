@@ -457,6 +457,72 @@
       "property": "retention outlives the longest run a scope may authorise",
       "find": "        if self.ttl_seconds < MAXIMUM_RUN_DURATION_SECONDS:",
       "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "an unreachable kill switch stops every run rather than permitting it",
+      "find": "        if not self.available:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a global stop covers runs that do not exist yet",
+      "find": "        if self._everything is not None:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a stopped run is refused",
+      "find": "        if run_id in self._stopped:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a stop without a reason is refused",
+      "find": "            raise RunStopped(f\"stopping {run_id} needs a reason\")",
+      "replace": "            pass"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "an adapter silent past its timeout stops the run",
+      "find": "        if silent > self.timeout_seconds:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "an unwatched run is not assumed alive",
+      "find": "        if last is None:\n            raise RunStopped(f\"run {run_id} is not being watched\")",
+      "replace": "        if last is None:\n            return"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a heartbeat out of order is refused",
+      "find": "        if now < self._last_beat[run_id]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "registration counts as the first beat, so a silent adapter goes stale on schedule",
+      "find": "        self._last_beat[run_id] = now\n\n    def beat(",
+      "replace": "        self._last_beat.setdefault(run_id, datetime.max.replace(tzinfo=now.tzinfo))\n\n    def beat("
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a heartbeat timeout under two intervals is refused",
+      "find": "        if self.timeout_seconds < 2 * HEARTBEAT_INTERVAL_SECONDS:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a heartbeat timeout past the grant maximum is refused",
+      "find": "        if self.timeout_seconds >= _GRANT_MAXIMUM_LIFETIME_SECONDS:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/kill_switch.py",
+      "property": "a sweep reports every stale run",
+      "find": "            run_id for run_id, last in self._last_beat.items() if last < horizon",
+      "replace": "            run_id for run_id, last in self._last_beat.items() if False"
     }
   ]
 }
