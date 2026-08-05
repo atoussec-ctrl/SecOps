@@ -547,6 +547,48 @@
       "property": "only forgetting a run clears its latched miss",
       "find": "        self._missed.discard(run_id)",
       "replace": "        pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "a stale run is stopped rather than only reported",
+      "find": "                self._stop(run_id, reason=reason, now=now)",
+      "replace": "                pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "a broken audit store does not prevent a stop from happening",
+      "find": "            except UnrecordableDecision as failure:",
+      "replace": "            except Exception as failure:  # noqa: BLE001\n                raise failure  # then:"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "one run that cannot move does not abandon the rest of the sweep",
+      "find": "                unstoppable.append(f\"{run_id}: {refusal.reason}\")\n                continue",
+      "replace": "                raise"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "the switch is engaged before the state machine is asked to move",
+      "find": "        self.switch.engage(run_id, reason=reason)",
+      "replace": "        pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "a stopped run stops being watched, so the monitor does not grow",
+      "find": "            self.monitor.forget(run_id)",
+      "replace": "            pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "a failure to record is reported rather than swallowed",
+      "find": "                unrecorded.append(f\"{run_id}: {failure.reason}\")",
+      "replace": "                pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "both the switch and the heartbeat are consulted before a run continues",
+      "find": "        self.monitor.assert_alive(run_id, now)",
+      "replace": "        pass"
     }
   ]
 }

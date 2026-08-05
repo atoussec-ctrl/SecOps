@@ -4,6 +4,83 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-006 — The sweep, and the asymmetry it turns on
+
+Status: **complete**. Depends on: E1-005. Phase 1.
+
+`HeartbeatMonitor.stale` named the runs that should be stopped and stopped
+nothing. `runs/supervisor.py` acts on that list: engage the switch, move the
+state machine, write the audit entry, stop watching.
+
+### A kill is not privileged execution
+
+Everywhere else here, a decision that cannot be recorded does not take effect —
+`04-orchestrator-spec.md` requires audit-store failure to block privileged
+execution, and `audit.recorder.guard` enforces it.
+
+**A kill is the opposite case.** It is not privileged execution; it is the
+cessation of it. Refusing to stop a run because the stop could not be written
+down would leave a run executing that nobody wanted executing — the outcome the
+audit requirement exists to prevent, caused by the requirement itself.
+
+So the stop happens and the record is attempted after. A failed record is
+returned in the report rather than raised, so an operator learns the store is
+broken *and* that the dangerous work has already ended.
+
+### One broken run does not abandon the sweep
+
+Failures are collected per run rather than raised. A sweep that gave up half-way
+would leave exactly the runs it had not reached still going, which is the worst
+possible subset to leave running.
+
+The switch is engaged **before** the state machine is asked to move, so a run
+whose move fails is still refused by every other caller.
+
+### Forgetting is part of stopping
+
+The monitor leak recorded in the previous entry is closed here rather than in
+the monitor: whoever kills a stale run is who knows it has ended.
+
+### `assert_permitted` asks both questions
+
+The switch may have stopped a run and the adapter may have gone silent. Both are
+asked in one place so neither is forgotten by a caller who only knew about one.
+
+### A test bug worth keeping the comment for
+
+The helper read `chain or AuditChain(...)`. `AuditChain` defines `__len__`, so
+an empty chain is **falsy**, and a deliberately broken store was silently
+replaced by a working one — the two asymmetry tests passed against the wrong
+object. Truthiness on a container that defines `__len__` is a trap, and the
+comment stays where the mistake was made.
+
+### `check:mutation` was taking over ten minutes
+
+It copied the whole module tree once per mutant. Ninety-six copies dominated the
+runtime and bought nothing: each mutant edits one file, and the original is
+written back in a `finally` before the next runs, so the copy only ever holds
+one deliberate defect at a time. One copy for the catalogue, restore between
+mutants. **10+ minutes to 62 seconds.** The working tree is still never touched,
+which is the property that mattered.
+
+### An unexplained edit to a contract sample
+
+`check:contracts` failed on
+`packages/contracts/findings/samples/finding/verified-sql-injection.json`:
+`exploit_evidence` read `demonsztrated`. `main` has `demonstrated`, and the file
+had been modified during this session at 20:47:21. Nothing run here writes to
+that path.
+
+Restored byte-for-byte from `main` and verified. Recorded rather than quietly
+corrected, because a one-character edit to a contract sample that nothing
+accounts for is worth someone knowing about — and because the check caught it,
+which is what it is for.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 194 Python tests,
+96/96 mutants killed, exit 0. Seven mutants added.
+
 ## Revision — a late heartbeat revived a run that should have been killed
 
 ### Defect fixed

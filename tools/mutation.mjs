@@ -74,15 +74,20 @@ export async function checkMutation(root, interpreter = process.env.PYTHON ?? "p
     return { problems: ["the suite fails before any mutation; fix it first"] };
   }
 
-  for (const [index, mutant] of catalogue.mutants.entries()) {
-    const workspace = await mkdtemp(path.join(tmpdir(), "mutation-"));
+  // One copy for the whole catalogue rather than one per mutant. Copying the
+  // module tree ninety times dominated the runtime and bought nothing: each
+  // mutant edits one file and the original is written back before the next, so
+  // the copy is only ever holding one deliberate defect at a time. The working
+  // tree is still never touched, which is the property that matters.
+  const workspace = await mkdtemp(path.join(tmpdir(), "mutation-"));
 
-    try {
-      await cp(source, workspace, {
-        recursive: true,
-        filter: (entry) => !entry.includes("__pycache__"),
-      });
+  try {
+    await cp(source, workspace, {
+      recursive: true,
+      filter: (entry) => !entry.includes("__pycache__"),
+    });
 
+    for (const [index, mutant] of catalogue.mutants.entries()) {
       const file = path.join(workspace, mutant.file);
       const original = await readFile(file, "utf8");
 
@@ -98,7 +103,15 @@ export async function checkMutation(root, interpreter = process.env.PYTHON ?? "p
 
       await writeFile(file, original.replace(mutant.find, mutant.replace));
 
-      const mutated = runSuite(interpreter, catalogue.suite.command, workspace);
+      let mutated;
+
+      try {
+        mutated = runSuite(interpreter, catalogue.suite.command, workspace);
+      } finally {
+        // Restored before the next mutant whatever happened, so two deliberate
+        // defects can never be present at once.
+        await writeFile(file, original);
+      }
 
       if (!mutated.ran) {
         problems.push(`mutant ${index + 1} could not run: ${mutated.detail}`);
@@ -108,9 +121,9 @@ export async function checkMutation(root, interpreter = process.env.PYTHON ?? "p
       if (mutated.passed) {
         survivors.push(`${mutant.file}: ${mutant.property}`);
       }
-    } finally {
-      await rm(workspace, { recursive: true, force: true });
     }
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
   }
 
   const total = catalogue.mutants.length;
