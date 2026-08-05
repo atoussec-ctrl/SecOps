@@ -104,6 +104,14 @@ const tasks = new Map([
     },
   ],
   [
+    "check:orchestrator",
+    {
+      phase: "Phase 1",
+      summary: "Run the Python orchestrator suite against the shared vectors.",
+      run: checkOrchestrator,
+    },
+  ],
+  [
     "check:all",
     {
       phase: "Phase 0",
@@ -121,6 +129,7 @@ const BOOTSTRAP_ORDER = [
   "check:exposure",
   "check:workflows",
   "check:foundation",
+  "check:orchestrator",
 ];
 
 function asProblems(problems) {
@@ -261,6 +270,32 @@ async function checkFoundation() {
 
   if (result.error) {
     process.stderr.write(`Foundation suite failed to start: ${result.error.message}\n`);
+    return EXIT_TASK_FAILED;
+  }
+
+  return result.status === EXIT_SUCCESS ? EXIT_SUCCESS : EXIT_TASK_FAILED;
+}
+
+// The orchestrator is Python and the scope contract is JSON Schema. Both are
+// tested against the same conformance vectors, so this runs from the same task
+// interface as the Node suite rather than from a separate command a reader has
+// to know about.
+async function checkOrchestrator() {
+  const serviceRoot = path.join(repositoryRoot, "services", "orchestrator");
+  const interpreter = process.env.PYTHON ?? "python3";
+
+  const result = spawnSync(
+    interpreter,
+    ["-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"],
+    { cwd: serviceRoot, stdio: "inherit", env: testRunnerEnvironment() },
+  );
+
+  // ENOENT here means the manifest promises a Python this machine does not
+  // have. Reporting that as a pass is the failure this repository refuses.
+  if (result.error) {
+    process.stderr.write(
+      `Orchestrator suite failed to start with "${interpreter}": ${result.error.message}\n`,
+    );
     return EXIT_TASK_FAILED;
   }
 

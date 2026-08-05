@@ -4,6 +4,96 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-001 — Special-range address policy, Python implementation
+
+Status: **implemented**. Depends on: E0-004. Phase 1.
+
+Python 3.12.10 was installed, which retired the blocker every Phase 1 task
+carried. The prerequisite entry was pinned only after `python3 --version`
+answered — the Microsoft Store stub that preceded it resolves on PATH and prints
+nothing, which is why presence was never accepted as evidence.
+
+### Changed files
+
+- `services/orchestrator/scope/address_policy.py` — the classifier.
+- `services/orchestrator/tests/test_address_policy.py` — 13 tests.
+- `tools/repo.mjs` — `check:orchestrator`, added to the bootstrap order.
+- `tools/workflows.mjs` — runtime-version agreement generalized beyond Node.
+- `.github/workflow-set.json`, `.github/workflows/pr.yml` — Python in CI.
+- `version-manifest.json` — `python`, `pythonPackageManager`,
+  `actionsSetupPython` pinned.
+
+### What this closes
+
+The repository has claimed since ADR-011 that a language-neutral contract keeps
+a Python service and a TypeScript console honest. Until now only one side
+existed. Both sides are now tested against the same 70 vectors, so a
+cross-language disagreement is a test failure rather than a production surprise.
+
+### Divergences the second implementation found
+
+Neither was visible with one implementation.
+
+**A trailing dot.** `web.lab.test.` is a legal absolute name and safe to reach,
+so the classifier calls it `reserved-domain`. The scope pattern admits no
+trailing dot, so it could never appear in a signed scope. Classification and
+eligibility are therefore different questions: the runtime refuses the absolute
+form even though it classifies as safe, because admitting it would accept a
+spelling the signed scope never contained. Two vectors now pin this.
+
+**A prefix minimum.** `0.0.0.0/0` is well formed; what is wrong with it is that
+it covers every address. The first draft returned `malformed`, which hid the
+reason. It classifies as `unspecified` and the prefix minimum applies at
+eligibility instead.
+
+### The standard library is not the policy
+
+`ipaddress.ip_address("169.254.169.254").is_private` returns **`True`**. That is
+the cloud metadata endpoint —
+[`09-tool-safety-guardrails.md`](../04-security/09-tool-safety-guardrails.md)
+denies it independently of scope, and it is the target of WEB-SSRF-001. The same
+call returns `True` for the documentation TEST-NETs, the benchmarking range,
+`240.0.0.0/4`, `0.0.0.0/8` and the broadcast address, and **`False`** for
+carrier-grade NAT.
+
+An implementation using `is_private` as its safety test would admit the single
+address the threat model cares most about, and would read as correct. Eligibility
+comes from an explicit allowlist of four ranges. A test asserts the trap still
+exists in the standard library, so the reasoning survives the next reader.
+
+### Fail-closed behavior
+
+`unittest discover` exits 0 when it finds no test, so `check:orchestrator` would
+otherwise report a pass over an empty suite. The task test asserts a parsed test
+count of at least ten, not merely `OK`. A second test runs the task with
+`PYTHON` pointed at an interpreter that does not exist and requires exit 1: a
+missing runtime fails the check rather than skipping it.
+
+### A digest that did its job
+
+Moving a sample scope off one address changed its canonical digest and
+`check:foundation` refused the record, naming both the declared and the expected
+hash. That is the E1-003 contract working: a signed scope cannot be edited
+quietly. The digest was recomputed with `tools/scope-hash.mjs`.
+
+### Tests executed
+
+`node tools/repo.mjs check:all` — 8 checks, 280 Node tests, 13 Python tests,
+exit 0.
+
+### Known limitations and remaining risk
+
+- The classifier is pure. DNS resolution, address pinning and redirect
+  revalidation are E1-002 and are where a correct classifier still loses if the
+  answer changes after the grant is issued.
+- No mutation testing exists for the Python module. It is a security-critical
+  module under
+  [`02-tdd-coverage-mutation.md`](../06-testing/02-tdd-coverage-mutation.md) and
+  the ≥80% requirement is unmeasured.
+- Python coverage is not measured either; the threshold is still conflict 4.
+- `pythonPackageManager` is pinned but nothing is installed through it. The
+  hashed lock file has no entries because the module is standard library only.
+
 ## Revision — the address policy had no IPv6
 
 ### Gap found

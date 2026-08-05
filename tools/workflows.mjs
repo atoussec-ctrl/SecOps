@@ -20,6 +20,14 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/;
 // (docs/05-devsecops/04-static-supply-chain.md, workflow layer).
 const WORKFLOW_EXPRESSION = /\$\{\{/;
 
+// Setup-action inputs that name a runtime, mapped to the manifest entry that
+// pins it. Adding a runtime to CI means adding it here, so an unpinned one
+// cannot be installed by a workflow that looks ordinary.
+const RUNTIME_INPUTS = [
+  ["node-version", "node"],
+  ["python-version", "python"],
+];
+
 const GENERATED_HEADER = (descriptorPath) => [
   `# Generated from ${descriptorPath} by tools/workflows.mjs.`,
   "# Do not edit by hand: `node tools/repo.mjs check:workflows` fails when this",
@@ -95,13 +103,20 @@ function problemsForStep(workflowId, jobId, step, manifest) {
     }
   }
 
-  // One source of truth for the runtime version: the version manifest.
-  const pinnedNode = manifest.entries?.node;
+  // One source of truth for every runtime version: the version manifest. A
+  // workflow that installs a runtime the manifest does not pin would test a
+  // different repository from the one a developer runs locally.
+  for (const [input, entryName] of RUNTIME_INPUTS) {
+    const requested = step.with?.[input];
+    const pinned = manifest.entries?.[entryName];
 
-  if (step.with?.["node-version"] !== undefined && pinnedNode !== undefined) {
-    if (step.with["node-version"] !== pinnedNode.version) {
+    if (requested === undefined || pinned === undefined) {
+      continue;
+    }
+
+    if (requested !== pinned.version) {
       problems.push(
-        `${label}: node-version "${step.with["node-version"]}" does not match the pinned ${pinnedNode.version}`,
+        `${label}: ${input} "${requested}" does not match the pinned ${pinned.version}`,
       );
     }
   }

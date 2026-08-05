@@ -1,7 +1,24 @@
 # services/orchestrator
 
 Python control plane and CLI: scope validation, safe tool execution and run
-control. Reserved by backlog task E0-001; implementation begins at E1-001.
+control.
+
+Python 3.12.10, standard library only. Run the suite with
+`node tools/repo.mjs check:orchestrator`, which `check:all` also runs.
+
+## Implemented
+
+| Module | Task | State |
+| --- | --- | --- |
+| `scope/address_policy.py` | E1-001 | Classifies an address, CIDR, hostname or URL against the special-range policy and decides scope eligibility. Tested against the shared conformance vectors. |
+
+`ipaddress` is used to parse and never to decide. Its `is_private` returns
+`True` for `169.254.169.254`, the cloud metadata endpoint, and `False` for
+carrier-grade NAT, so eligibility comes from an explicit allowlist of four
+ranges. A test asserts that trap still exists.
+
+Not yet built: DNS resolution and address pinning, redirect revalidation
+(E1-002), grants, runs, budgets, adapters, provisioning, audit, CLI and API.
 
 ## Specification
 

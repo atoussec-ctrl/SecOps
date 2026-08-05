@@ -125,6 +125,41 @@ test("Phase 0 help lists the aggregate bootstrap check", () => {
   assert.match(result.stdout, /bootstrap order/);
 });
 
+// The orchestrator suite is the first check that leaves Node. It is also the
+// first that can silently run nothing: `unittest discover` exits 0 when it
+// finds no test, so a wrong path would report a pass over an empty suite.
+test("E1-001 help lists the orchestrator check and it runs real tests", () => {
+  assert.match(runTaskInterface(["help"]).stdout, /check:orchestrator/);
+
+  const result = runTaskInterface(["check:orchestrator"]);
+
+  assert.equal(result.status, 0, result.stderr);
+
+  // unittest writes its summary to stderr. Both halves matter: OK alone would
+  // also be printed for zero tests.
+  const output = `${result.stdout}${result.stderr}`;
+  const ran = output.match(/Ran (\d+) tests?/);
+
+  assert.ok(ran, `no test count in the orchestrator output:\n${output}`);
+  assert.ok(
+    Number(ran[1]) >= 10,
+    `the orchestrator suite ran only ${ran[1]} tests`,
+  );
+  assert.match(output, /\nOK/);
+});
+
+// A Python this machine does not have must fail the check, never skip it.
+test("E1-001 a missing interpreter fails the orchestrator check", () => {
+  const result = spawnSync(process.execPath, [taskInterface, "check:orchestrator"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    env: { ...process.env, PYTHON: "python-that-is-not-installed" },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /failed to start/);
+});
+
 test("E0-007 help lists the workflow check and it passes on this repository", () => {
   assert.match(runTaskInterface(["help"]).stdout, /check:workflows/);
 

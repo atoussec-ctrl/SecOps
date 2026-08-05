@@ -1,7 +1,7 @@
 # OWASP & PenTest Security Lab — Agent Build Specification
 
 Version: 1.0.0
-Status: implementation-ready; Phase 0 built, Phase 1 blocked on a missing toolchain
+Status: implementation-ready; Phase 0 built, Phase 1 started
 Audience: AI coding agents, security engineers, developers, QA engineers and learners
 Execution boundary: local or explicitly authorized isolated environments only
 Bootstrap: `node tools/repo.mjs check:all`
@@ -52,9 +52,9 @@ constrained by a contract before it is constrained by a policy document.
 
 ## What exists today
 
-The repository is a **specification package with a working Phase 0 foundation**.
-The specification is complete; the runtime services are not, because their
-languages are not installed on this machine.
+The repository is a **specification package with a working Phase 0 foundation
+and the first Phase 1 module implemented**. The specification is complete; most
+runtime services are not yet built.
 
 | | Count |
 | --- | --- |
@@ -63,8 +63,9 @@ languages are not installed on this machine.
 | Reusable templates | 8 |
 | JSON Schema contracts | 10 |
 | Verification modules (`tools/`) | 9 |
+| Repository checks | 8 |
 | Foundation test suites | 15 |
-| Tests | 278, all passing |
+| Tests | 280 Node, 13 Python, all passing |
 
 ### Built and verified
 
@@ -78,49 +79,57 @@ languages are not installed on this machine.
 | E0-006 Architecture dependency fitness tests | complete |
 | E0-007 Base PR workflow with minimal permissions | workflow built; gate stages blocked |
 
-### Prepared ahead of their language
+### The first cross-language module
 
-These tasks belong to Phase 1 and need Python. The language-neutral half — the
-contract, its conformance vectors and its tests — is built and verified, so the
-runtime implementation has something to be tested against rather than a
-paragraph to interpret.
+**E1-001, the special-range address policy, is implemented in Python** at
+`services/orchestrator/scope/address_policy.py` and runs on every `check:all`.
 
-| Backlog task | What is built | What waits on Python |
+This is the design's central claim being paid off. The JSON Schema in the scope
+contract decides what an operator may *write down*; the Python module decides
+what the runtime does with a destination that arrives another way, through DNS
+resolution or a redirect. Both are tested against the **same 70 conformance
+vectors**, so a disagreement between the two languages is a test failure rather
+than a production surprise.
+
+Building the second implementation immediately found two divergences the vectors
+had not yet pinned; both are now vectors of their own. See
+[`packages/contracts/security/README.md`](packages/contracts/security/README.md).
+
+### Prepared ahead of their runtime
+
+The language-neutral half is built and verified, so the implementation has
+something to be tested against rather than a paragraph to interpret.
+
+| Backlog task | What is built | What remains |
 | --- | --- | --- |
-| E1-001 Special-range address policy | 68 conformance vectors across IPv4, IPv6, hostnames and URLs | the canonicalizer and resolver |
+| E1-001 Special-range address policy | 70 vectors **and the Python classifier** | DNS resolution, pinning, redirect revalidation (E1-002) |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
-### Blocked
+### Still unselected
 
-`node tools/repo.mjs check:prerequisites` reports 3 satisfied and 23 deferred
-entries. The three that block the most work:
+`node tools/repo.mjs check:prerequisites` reports what is satisfied and what is
+deferred. Java and a Java build tool are absent and gate epic E3. `git` is not
+installed, so publication goes through the Git Data API.
 
-- **Python is not installed** (the `python` command on this machine is a
-  Microsoft Store stub). It gates every Phase 1 service: orchestrator, Scope
-  Guard, Finding Hub, ingestion and the outbox.
-- **Java and a Java build tool are not installed.** They gate epic E3.
-- **`git` is not installed.** Publication to GitHub goes through the Git Data
-  API instead.
-
-Four container image digests are still unselected: `nodeImage`, `pythonImage`,
+Four container image digests remain unselected: `nodeImage`, `pythonImage`,
 `javaImage` and `postgresql`. Each waits on a choice that belongs to another
-task — which Python runtime, which Java LTS, which base image the Console ships
-on — not merely on registry access. Until they are pinned, `check:exposure`
-reports them as *deferred with a blocking task*, never as a pass.
+task — which base image the Console ships on, which Java LTS, which PostgreSQL
+the topology runs. Until they are pinned, `check:exposure` reports them as
+*deferred with a blocking task*, never as a pass.
 
-The two GitHub Action pins are resolved: `actions/checkout` at `v7.0.1` and
-`actions/setup-node` at `v7.0.0`, each recorded as the 40-character commit its
-release tag resolves to, read from the action repository rather than
-transcribed from a tag. `check:workflows` now verifies a rendered workflow
-instead of reporting a deferral.
+The three GitHub Action pins are resolved — `actions/checkout` at `v7.0.1`,
+`actions/setup-node` and `actions/setup-python` at `v7.0.0` — each recorded as
+the 40-character commit its release tag resolves to, read from the action
+repository rather than transcribed from a tag.
 
 ## Quick start
 
-Requirements: Node.js 24.18.1 and npm 11.16.0 (see
+Requirements: Node.js 24.18.1, npm 11.16.0 and Python 3.12.10 (see
 [`version-manifest.json`](version-manifest.json)). No third-party packages are
-installed and none are needed — the verification tooling has zero dependencies.
+installed and none are needed — both the Node tooling and the Python
+orchestrator are standard library only.
 
 ```bash
 node tools/repo.mjs check:all
@@ -130,7 +139,7 @@ That is the single documented bootstrap command. It runs every check in
 dependency order and stops at the first failure. Expected output ends with:
 
 ```
-All 7 checks passed.
+All 8 checks passed.
 ```
 
 To see what is available:
@@ -161,7 +170,8 @@ vector.
 | `check:architecture` | Enforces the dependency direction from [ADR-001](adrs/001-polyglot-monorepo.md) and the ownership of process execution: domain code may not import infrastructure, and only the orchestrator may spawn a process. |
 | `check:exposure` | Asserts the generated lab topology binds no target to a host-reachable address, grants no privileged mode and declares no host network. Unpinned images are reported as deferred, not passed. |
 | `check:workflows` | Enforces minimal workflow permissions, action pinning by commit SHA, the absence of `pull_request_target`, and that every workflow file on disk is byte-identical to what its descriptor renders. |
-| `check:all` | Runs all seven in bootstrap order and stops at the first failure. |
+| `check:orchestrator` | Runs the Python orchestrator suite against the same conformance vectors the Node suite uses. A missing interpreter fails the check; it is never skipped. |
+| `check:all` | Runs all eight in bootstrap order and stops at the first failure. |
 
 `check:all` is verified by running it rather than by a test: it invokes
 `check:foundation`, so a test that executed it would recurse into the suite that
@@ -261,7 +271,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               15 acceptance suites, 278 tests
+    ├── foundation/               15 acceptance suites, 280 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -376,11 +386,14 @@ Its selection rule is strict:
 | Entry | Status | Pinned to |
 | --- | --- | --- |
 | `node` | pinned | 24.18.1 |
+| `python` | pinned | 3.12.10 |
+| `pythonPackageManager` | pinned | pip 25.0.1 |
 | `npm` | pinned | 11.16.0 |
 | `containerRuntime` | pinned | 29.6.2 |
 | `actionsCheckout` | pinned | `actions/checkout` @ `3d3c42e5…` (v7.0.1) |
 | `actionsSetupNode` | pinned | `actions/setup-node` @ `82076278…` (v7.0.0) |
-| 23 further entries | unselected, each naming its blocking task | — |
+| `actionsSetupPython` | pinned | `actions/setup-python` @ `5fda3b95…` (v7.0.0) |
+| 21 further entries | unselected, each naming its blocking task | — |
 
 An action is pinned by the **commit its release tag resolves to**, never by the
 tag. A tag can be moved to point at different code after review; a commit SHA
@@ -553,11 +566,10 @@ Four of them block work that is otherwise ready:
 | 8 | Protected-policy independence is not designed: safety tests must be independent of repository input, yet a pull request can change the workflows. | E0-007 |
 | 9 | The PR active-profile terminology is unclear: "narrowly targeted" testing is not one of the three defined tool classes. | E0-007, E2-013 |
 
-One further input is needed from a human:
-
-- **Install Python** to unblock all of Phase 1. Every service in the control and
-  finding planes is Python, so nothing beyond contracts can be built for them
-  until it exists. Nothing else in the backlog is waiting on a person.
+Nothing in the backlog is waiting on a person. Python 3.12.10 is installed and
+the orchestrator suite runs on it, so the four conflicts above are the only
+decisions outstanding, and each is a normative question rather than a missing
+tool.
 
 The four unpinned image digests are not in this list. Each waits on a selection
 its own task owns — the Python runtime, the Java LTS, the Console base image and
