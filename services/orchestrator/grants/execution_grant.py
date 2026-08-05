@@ -30,6 +30,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Final, Mapping
@@ -69,6 +70,80 @@ _SIGNED_FIELDS: Final = (
     "expires_at",
     "profile",
 )
+
+
+# The contract in packages/contracts/security/execution-grant.schema.json,
+# restated in the language that actually runs.
+#
+# A JSON Schema constrains documents that are validated against it. Nothing
+# validates a grant on the runtime path, so without this table the schema's
+# guarantees hold only for documents that happened to pass through a validator
+# — and a signature says who wrote a document, never that it is well formed. A
+# grant naming a destructive profile, or pinning a hostname instead of a
+# resolved address, verified cleanly before this existed.
+#
+# tests/foundation/execution-grant-differential.test.mjs asserts this table and
+# the schema accept exactly the same documents, so the restatement cannot drift.
+_FIELD_PATTERNS: Final = {
+    "grant_version": re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$"),
+    "grant_id": re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$"),
+    "nonce": re.compile(r"^[0-9a-f]{32,64}$"),
+    "key_id": re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$"),
+    "scope_hash": re.compile(r"^[0-9a-f]{64}$"),
+    "audience": re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$"),
+    "run_id": re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$"),
+    "issued_at": re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"),
+    "expires_at": re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"),
+    "signature": re.compile(r"^[0-9a-f]{64,128}$"),
+}
+
+_ADDRESS: Final = re.compile(r"^[0-9a-f.:]+$")
+_PROFILES: Final = frozenset({"passive", "bounded-active"})
+_MAXIMUM_PINNED_ADDRESSES: Final = 16
+_MAXIMUM_ADDRESS_LENGTH: Final = 45
+
+
+def _assert_contract_shape(grant: Mapping[str, object]) -> None:
+    """Refuse a grant the contract could not express, signed or not."""
+    for name, pattern in _FIELD_PATTERNS.items():
+        value = grant.get(name)
+
+        if not isinstance(value, str) or not pattern.fullmatch(value):
+            raise GrantRefused(f"{name} does not satisfy the grant contract: {value!r}")
+
+    if grant.get("profile") not in _PROFILES:
+        raise GrantRefused(
+            f"profile {grant.get('profile')!r} is not one the contract allows; "
+            "destructive tooling has no representation here",
+        )
+
+    addresses = grant.get("pinned_addresses")
+
+    if not isinstance(addresses, (list, tuple)) or not addresses:
+        raise GrantRefused("a grant that pins no address authorises no destination")
+
+    if len(addresses) > _MAXIMUM_PINNED_ADDRESSES:
+        raise GrantRefused(f"more than {_MAXIMUM_PINNED_ADDRESSES} pinned addresses")
+
+    if len(set(addresses)) != len(addresses):
+        raise GrantRefused("pinned addresses must be unique")
+
+    for address in addresses:
+        if (
+            not isinstance(address, str)
+            or len(address) > _MAXIMUM_ADDRESS_LENGTH
+            or not _ADDRESS.fullmatch(address)
+        ):
+            # A name here would be resolved again at connect time, which is the
+            # gap E1-002 exists to close.
+            raise GrantRefused(
+                f"pinned address {address!r} is not a resolved literal",
+            )
+
+    unknown = set(grant) - set(_SIGNED_FIELDS) - {"signature"}
+
+    if unknown:
+        raise GrantRefused(f"unknown grant fields: {', '.join(sorted(unknown))}")
 
 
 class GrantRefused(Exception):
@@ -159,6 +234,10 @@ def issue_grant(
 
     grant["signature"] = sign_grant(grant, key)
 
+    # Checked here rather than trusted to the caller: an issuer that can mint a
+    # document the contract rejects makes the contract advisory.
+    _assert_contract_shape(grant)
+
     return grant
 
 
@@ -229,6 +308,11 @@ def verify_grant(
 
     if not isinstance(presented, str) or not hmac.compare_digest(presented, expected):
         raise GrantRefused("signature does not verify")
+
+    # A signature says who wrote a document, never that it is well formed. A
+    # grant naming a destructive profile, or pinning a hostname rather than a
+    # resolved address, verified cleanly before this line existed.
+    _assert_contract_shape(grant)
 
     issued = _parse_timestamp(str(grant.get("issued_at")), "issued_at")
     expires = _parse_timestamp(str(grant.get("expires_at")), "expires_at")
