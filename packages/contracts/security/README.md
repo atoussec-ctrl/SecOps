@@ -51,6 +51,32 @@ Beyond addresses, the schema makes several rules structural rather than advisory
 - `approval.scope_hash` must be a full SHA-256 digest;
 - unknown properties are rejected everywhere.
 
+## What the second implementation found
+
+`services/orchestrator/scope/address_policy.py` is tested against these same
+vectors. Writing it exposed two places where the two languages would have
+disagreed, and both are now vectors rather than opinions.
+
+**A trailing dot.** `web.lab.test.` is a legal absolute name and safe to reach,
+so the Python classifier calls it `reserved-domain`. The scope pattern admits no
+trailing dot, so it could never appear in a signed scope. Classification and
+eligibility are therefore not the same question, and the runtime now refuses the
+absolute form even though it classifies as safe — otherwise it would admit a
+spelling the signed scope never contained.
+
+**A prefix minimum.** `0.0.0.0/0` is perfectly well formed; what is wrong with
+it is that it covers every address. Calling it malformed would hide that, so it
+classifies as `unspecified` and the prefix minimum applies at eligibility.
+
+There is also a hazard worth stating for anyone writing a third implementation.
+Python's `ipaddress.ip_address("169.254.169.254").is_private` returns **`True`**
+— the cloud metadata endpoint, the one address the threat model most wants
+denied. It is also `True` for the documentation TEST-NETs, the benchmarking
+range, `240.0.0.0/4`, `0.0.0.0/8` and the broadcast address, and **`False`** for
+carrier-grade NAT. `is_private` is not a safety test in any direction.
+Eligibility comes from an explicit allowlist of four ranges, and a test asserts
+the trap still exists so the reasoning is not lost.
+
 ## Limits of this contract
 
 Schema validation is a static check on a document. It is not the Scope Guard.
