@@ -127,6 +127,13 @@ class HeartbeatMonitor:
     timeout_seconds: int = HEARTBEAT_TIMEOUT_SECONDS
     _last_beat: dict[str, datetime] = field(default_factory=dict)
 
+    # Runs observed past their timeout. Latched on purpose: a sweep that sees a
+    # run stale and is beaten to the kill by a late report would never act, and
+    # an adapter that is intermittently silent would evade the control for as
+    # long as it liked. Breaching the timeout is the adapter's doing; whether
+    # the run continues is the operator's, so only `forget` clears this.
+    _missed: set[str] = field(default_factory=set)
+
     def __post_init__(self) -> None:
         # Both bounds asserted rather than commented. A timeout under two
         # intervals kills a healthy run on one lost beat; a timeout over the
@@ -158,6 +165,20 @@ class HeartbeatMonitor:
         if run_id not in self._last_beat:
             raise RunStopped(f"run {run_id} is not being watched")
 
+        if run_id in self._missed:
+            raise RunStopped(
+                f"run {run_id} already missed its heartbeat; a late report does "
+                "not revive it",
+            )
+
+        # Detected here as well as in the sweep, because this is the earliest
+        # moment the breach is visible and the sweep may not run before it.
+        if (now - self._last_beat[run_id]).total_seconds() > self.timeout_seconds:
+            self._missed.add(run_id)
+            raise RunStopped(
+                f"run {run_id} reported after its {self.timeout_seconds}s timeout",
+            )
+
         if now < self._last_beat[run_id]:
             # A beat from before the last one is not a report, it is a clock
             # problem or a replayed message, and accepting it would extend the
@@ -174,23 +195,35 @@ class HeartbeatMonitor:
 
         silent = (now - last).total_seconds()
 
-        if silent > self.timeout_seconds:
+        if silent > self.timeout_seconds or run_id in self._missed:
+            self._missed.add(run_id)
             raise RunStopped(
                 f"run {run_id} has not reported for {int(silent)}s, past its "
                 f"{self.timeout_seconds}s heartbeat timeout",
             )
 
     def forget(self, run_id: str) -> None:
-        """Stop watching a run that has ended."""
+        """Stop watching a run that has ended.
+
+        The only way a latched miss is cleared. A run that ended has been
+        accounted for; one that merely started reporting again has not.
+        """
         self._last_beat.pop(run_id, None)
+        self._missed.discard(run_id)
 
     def stale(self, now: datetime) -> list[str]:
         """Every run that should be stopped, so a sweep can act on all of them."""
         horizon = now - timedelta(seconds=self.timeout_seconds)
 
-        return sorted(
-            run_id for run_id, last in self._last_beat.items() if last < horizon
-        )
+        for run_id, last in self._last_beat.items():
+            if last < horizon:
+                self._missed.add(run_id)
+
+        return sorted(self._missed)
 
     def watching(self) -> Mapping[str, datetime]:
         return dict(self._last_beat)
+
+    def missed(self, run_id: str) -> bool:
+        """Whether this run has ever been observed past its timeout."""
+        return run_id in self._missed

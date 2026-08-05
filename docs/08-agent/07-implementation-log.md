@@ -4,6 +4,57 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — a late heartbeat revived a run that should have been killed
+
+### Defect fixed
+
+The heartbeat had a time-of-check to time-of-use race, and it was the third of
+that shape in this service:
+
+```
+sweep sees stale : ['run.0001']
+after a late beat: []
+assert_alive     : ALIVE (the kill never happens)
+```
+
+A sweep observes a run past its timeout. Before it acts, the adapter reports
+again. The run now looks healthy and nothing stops it. An adapter that is
+**intermittently** silent — silent past the timeout, then reporting, then silent
+again — evades the control indefinitely, which is the shape a misbehaving
+adapter would actually have.
+
+Staleness now latches. Breaching the timeout is the adapter's doing; whether the
+run continues is the operator's, so a late report is refused and only `forget`,
+which means the run ended and was accounted for, clears the latch.
+
+The breach is detected in `beat` as well as in the sweep, because that is the
+earliest moment it is visible and the sweep may not run first.
+
+### The pattern, named
+
+Grant nonce consumed before the acceptance was recorded. DNS answer trusted
+after the check rather than pinned at it. Heartbeat staleness observed and then
+discarded. Three separate modules, one shape: **a safety decision and the action
+it authorises separated in time, with nothing holding the decision still in
+between.**
+
+Worth writing down because it is now predictable enough to look for on purpose,
+rather than something that turns up.
+
+### Also found
+
+`HeartbeatMonitor` grows without bound if `forget` is never called — 5000
+registrations retained. Unlike the idempotency store this one is bounded by the
+number of runs an engagement has, and the fix belongs with the sweep wiring
+rather than with the monitor: whoever kills a stale run is who knows it has
+ended. Recorded rather than patched here, and the wiring is the next commit.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 181 Python tests,
+89/89 mutants killed, exit 0. Four mutants added; two existing ones were
+restated after their anchors moved.
+
 ## E1-006 — Global kill and adapter heartbeat
 
 Status: **implemented**. Depends on: E1-005. Phase 1.
