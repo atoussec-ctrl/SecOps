@@ -319,6 +319,54 @@
       "property": "acceptance goes through the recorder rather than calling the verifier directly",
       "find": "    nonce = guard(",
       "replace": "    nonce = _direct("
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "only a declared transition is permitted",
+      "find": "        if transition is None:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a transition costs what the table says it costs",
+      "find": "        if missing:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a terminal run cannot move",
+      "find": "        if self.state in self._terminal:\n            raise RunRefused(\n                f\"run {self.run_id} is {self.state}, which is terminal; \"",
+      "replace": "        if False:\n            raise RunRefused(\n                f\"run {self.run_id} is {self.state}, which is terminal; \""
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a kill from finalizing ends incomplete, because execution is already over",
+      "find": "        target = \"incomplete\" if self.state == \"finalizing\" else \"cancelling\"",
+      "replace": "        target = \"cancelling\""
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a kill on a completed run says so rather than pretending to stop it",
+      "find": "        if self.state == \"completed\":",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a kill is idempotent toward its goal",
+      "find": "        if self.state == \"cancelling\" or self.state in self._terminal:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "only completed reports success",
+      "find": "        return self.state == \"completed\"",
+      "replace": "        return self.state in self._terminal"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a lifecycle that loaded nothing is refused rather than permitting nothing",
+      "find": "    if not lifecycle.get(\"transitions\") or not lifecycle.get(\"states\"):",
+      "replace": "    if False:"
     }
   ]
 }

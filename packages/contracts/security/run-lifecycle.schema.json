@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/run-lifecycle.schema.json",
+  "title": "Run Lifecycle",
+  "description": "The run state machine as data rather than as a diagram (backlog E1-005). The orchestrator is Python and the console is TypeScript, so the allowed transitions and what each one demands are defined once here and both sides are tested against this table. Unlike the finding lifecycle, a terminal state here is a dead end: a run that reached one is over, and starting again means a new run with a new grant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lifecycle_version", "initial_state", "states", "transitions"],
+  "properties": {
+    "lifecycle_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "initial_state": { "$ref": "#/$defs/state" },
+    "states": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/state_definition" }
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/transition" }
+    }
+  },
+  "$defs": {
+    "state": {
+      "enum": [
+        "draft",
+        "validating",
+        "ready",
+        "running",
+        "paused",
+        "cancelling",
+        "finalizing",
+        "rejected",
+        "cancelled",
+        "completed",
+        "incomplete"
+      ]
+    },
+    "requirement": {
+      "enum": [
+        "scope-record",
+        "scope-approval",
+        "exposure-assertion",
+        "pinned-addresses",
+        "execution-grant",
+        "operator-identity",
+        "kill-authority",
+        "adapter-exit",
+        "ingestion-receipt",
+        "teardown-complete",
+        "refusal-reason"
+      ],
+      "description": "What a transition costs. ingestion-receipt exists because docs/03-applications/04-orchestrator-spec.md states that only Completed represents acknowledged final result ingestion, and that a zero exit code alone is insufficient."
+    },
+    "state_definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "description", "terminal"],
+      "properties": {
+        "state": { "$ref": "#/$defs/state" },
+        "description": { "type": "string", "minLength": 10, "maxLength": 300 },
+        "terminal": {
+          "type": "boolean",
+          "description": "A run that reached a terminal state is over. No transition may originate from one, which is the difference between this machine and the finding lifecycle, where a terminal state is a resting place that new evidence can leave."
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "requires", "rationale"],
+      "properties": {
+        "from": { "$ref": "#/$defs/state" },
+        "to": { "$ref": "#/$defs/state" },
+        "requires": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/requirement" },
+          "description": "A state change always costs something. An unconditional transition has no representation here."
+        },
+        "rationale": { "type": "string", "minLength": 10, "maxLength": 300 }
+      }
+    }
+  }
+}

@@ -4,6 +4,75 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-005 (part) — Run state machine
+
+Status: **implemented**. Depends on: E1-004. Phase 1.
+
+### A conflict inside one document
+
+[`04-orchestrator-spec.md`](../03-applications/04-orchestrator-spec.md) lists
+**"Kill during every run state"** among its required safety tests at line 115.
+The state diagram in the same document, at lines 60 to 78, draws only
+`Running --> Cancelling`.
+
+A paused run would therefore have to be **resumed before it could be stopped**,
+which is the opposite of what a kill switch is for, and a run in `Draft`,
+`Validating` or `Ready` could not be stopped at all.
+
+Recorded as conflict 18. The stricter reading is applied: `cancelling` is
+reachable from every non-terminal state except `finalizing`, which stops into
+`incomplete` instead, because execution is already over there and what a kill
+costs is the acknowledgement rather than the work. The tests name the extra
+edges so they are not mistaken for an accident.
+
+### The table is the machine
+
+The transitions live in
+`packages/contracts/security/samples/run-lifecycle/orchestrator.json` and are
+loaded, not restated. A diagram cannot be executed, and a second copy of the
+rules drifts from the first.
+
+### Only completed means success
+
+The specification says an exit code of zero is insufficient, so the transition
+into `completed` demands an `ingestion-receipt` and nothing else opens that
+door. A run whose adapter exited cleanly and whose results were never
+acknowledged ends `incomplete`, which is a different word on purpose. Three
+tests hold it: the receipt requirement, the single route in, and `succeeded`
+written as an equality rather than as "not failed".
+
+### Terminal means terminal here
+
+Unlike the finding lifecycle — where a terminal state is a resting place new
+evidence can leave — a run that finished is finished. Starting again means a new
+run with a new grant. The two machines use the same word for different things,
+so both are asserted rather than assumed.
+
+### A kill switch that punishes being used is a bad kill switch
+
+The first implementation raised when a kill arrived at a run that was already
+`cancelling`, because no such transition exists. That is correct as table
+lookup and wrong as a safety control: an operator pressing it twice under
+pressure would get an exception.
+
+A kill is now idempotent toward its goal. Pressing it on a run that is already
+stopping or already stopped succeeds and changes nothing. The single exception
+is a run that already **completed**: stopping it is no longer possible, and the
+operator needs to be told rather than reassured.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 127 Python tests,
+59/59 mutants killed, exit 0. Eight mutants added.
+
+### Known limitations and remaining risk
+
+- **Budgets are not built.** They are the last piece of E1-005: the scope
+  contract bounds them, and nothing enforces them during a run.
+- Revocation still reaches the grant verifier as a `frozenset` argument. Wiring
+  it to run state is E1-006, together with the heartbeat.
+- The machine is in memory and carries no history. Durability is E1-008.
+
 ## Revision — an audit outage could destroy valid grants
 
 ### Defect fixed

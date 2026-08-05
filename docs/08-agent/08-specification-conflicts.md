@@ -10,7 +10,7 @@ implementing agent applies the **stricter** reading and records the choice.
 
 ## Status
 
-Sixteen entries are open. Entry 12 has a **proposed** ADR ([ADR-012](../../adrs/012-execution-grants.md))
+Seventeen entries are open. Entry 12 has a **proposed** ADR ([ADR-012](../../adrs/012-execution-grants.md))
 and entries 4 and 12 are partially addressed. None has an *accepted* ADR, so
 every entry still applies the stricter reading until reviewed.
 
@@ -159,6 +159,24 @@ every entry still applies the stricter reading until reviewed.
     dynamic CI reverts during teardown (`05-devsecops/05-dynamic-mobile.md:68-79`).
     Apply the stricter per-run reset until decided.
     Blocks: E4-010.
+
+## Run control
+
+18. **A kill is required from every run state and the diagram allows one.**
+    `03-applications/04-orchestrator-spec.md:115` lists "Kill during every run
+    state" among the required safety tests, while the state diagram in the same
+    document (`:60-78`) draws only `Running --> Cancelling`. A paused run would
+    therefore have to be resumed before it could be stopped, which is the
+    opposite of what a kill switch is for, and a run in `Draft`, `Validating` or
+    `Ready` could not be stopped at all.
+    Proposal: `Cancelling` is reachable from every non-terminal state except
+    `Finalizing`, which stops into `Incomplete` instead because execution is
+    already over there and what a kill costs is the acknowledgement rather than
+    the work.
+    The stricter reading is applied in
+    `packages/contracts/security/samples/run-lifecycle/orchestrator.json` and
+    named in the tests, so the extra edges are not mistaken for an accident.
+    Blocks: E1-006.
 
 ## Version and toolchain policy
 

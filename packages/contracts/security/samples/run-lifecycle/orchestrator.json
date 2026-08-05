@@ -1,0 +1,193 @@
+{
+  "lifecycle_version": "1.0.0",
+  "initial_state": "draft",
+  "states": [
+    {
+      "state": "draft",
+      "description": "Created and not yet checked against a scope.",
+      "terminal": false
+    },
+    {
+      "state": "validating",
+      "description": "Scope, environment and exposure are being verified.",
+      "terminal": false
+    },
+    {
+      "state": "ready",
+      "description": "Verified and waiting for an explicit start.",
+      "terminal": false
+    },
+    {
+      "state": "running",
+      "description": "An adapter is executing under a grant.",
+      "terminal": false
+    },
+    {
+      "state": "paused",
+      "description": "Execution suspended by an operator; budgets keep accruing.",
+      "terminal": false
+    },
+    {
+      "state": "cancelling",
+      "description": "A stop was requested and teardown is in progress.",
+      "terminal": false
+    },
+    {
+      "state": "finalizing",
+      "description": "Execution ended and results are being ingested.",
+      "terminal": false
+    },
+    {
+      "state": "rejected",
+      "description": "Refused before any execution. No packet was issued.",
+      "terminal": true
+    },
+    {
+      "state": "cancelled",
+      "description": "Stopped on request. Results are not acknowledged.",
+      "terminal": true
+    },
+    {
+      "state": "completed",
+      "description": "Ingestion acknowledged. The only state that means success.",
+      "terminal": true
+    },
+    {
+      "state": "incomplete",
+      "description": "Execution ended without an acknowledged ingestion receipt.",
+      "terminal": true
+    }
+  ],
+  "transitions": [
+    {
+      "from": "draft",
+      "to": "validating",
+      "requires": [
+        "scope-record",
+        "operator-identity"
+      ],
+      "rationale": "Validation begins once a scope record is attached."
+    },
+    {
+      "from": "validating",
+      "to": "ready",
+      "requires": [
+        "scope-approval",
+        "exposure-assertion",
+        "pinned-addresses"
+      ],
+      "rationale": "Scope and environment verified, and every address pinned before a packet can be issued."
+    },
+    {
+      "from": "validating",
+      "to": "rejected",
+      "requires": [
+        "refusal-reason"
+      ],
+      "rationale": "Refused before execution, so no packet was issued and none can be."
+    },
+    {
+      "from": "ready",
+      "to": "running",
+      "requires": [
+        "execution-grant",
+        "operator-identity"
+      ],
+      "rationale": "An explicit start, carrying a grant that is verified and recorded."
+    },
+    {
+      "from": "running",
+      "to": "paused",
+      "requires": [
+        "operator-identity"
+      ],
+      "rationale": "Suspended by an operator. Budgets keep accruing because the clock does."
+    },
+    {
+      "from": "paused",
+      "to": "running",
+      "requires": [
+        "execution-grant",
+        "operator-identity"
+      ],
+      "rationale": "Resuming needs a fresh grant; the one that started the run has expired."
+    },
+    {
+      "from": "running",
+      "to": "finalizing",
+      "requires": [
+        "adapter-exit"
+      ],
+      "rationale": "Execution ended. Whether it succeeded is not yet known."
+    },
+    {
+      "from": "finalizing",
+      "to": "completed",
+      "requires": [
+        "ingestion-receipt"
+      ],
+      "rationale": "Only an acknowledged ingestion receipt means success. A zero exit code does not."
+    },
+    {
+      "from": "finalizing",
+      "to": "incomplete",
+      "requires": [
+        "refusal-reason"
+      ],
+      "rationale": "Execution ended and ingestion was never acknowledged."
+    },
+    {
+      "from": "cancelling",
+      "to": "cancelled",
+      "requires": [
+        "teardown-complete"
+      ],
+      "rationale": "Teardown finished. Results are not acknowledged and the run did not succeed."
+    },
+    {
+      "from": "draft",
+      "to": "cancelling",
+      "requires": [
+        "kill-authority",
+        "refusal-reason"
+      ],
+      "rationale": "A kill must work from every non-terminal state, not only from running."
+    },
+    {
+      "from": "validating",
+      "to": "cancelling",
+      "requires": [
+        "kill-authority",
+        "refusal-reason"
+      ],
+      "rationale": "A kill must work from every non-terminal state, not only from running."
+    },
+    {
+      "from": "ready",
+      "to": "cancelling",
+      "requires": [
+        "kill-authority",
+        "refusal-reason"
+      ],
+      "rationale": "A kill must work from every non-terminal state, not only from running."
+    },
+    {
+      "from": "running",
+      "to": "cancelling",
+      "requires": [
+        "kill-authority",
+        "refusal-reason"
+      ],
+      "rationale": "A kill must work from every non-terminal state, not only from running."
+    },
+    {
+      "from": "paused",
+      "to": "cancelling",
+      "requires": [
+        "kill-authority",
+        "refusal-reason"
+      ],
+      "rationale": "A kill must work from every non-terminal state, not only from running."
+    }
+  ]
+}

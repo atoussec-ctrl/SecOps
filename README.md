@@ -61,11 +61,11 @@ runtime services are not yet built.
 | Markdown documents | 109 (68 under `docs/`) |
 | Architecture decision records | 11 accepted and 2 proposed, plus an index |
 | Reusable templates | 8 |
-| JSON Schema contracts | 13 |
+| JSON Schema contracts | 14 |
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
-| Foundation test suites | 21 |
-| Tests | 307 Node, 104 Python, all passing |
+| Foundation test suites | 22 |
+| Tests | 317 Node, 127 Python, all passing |
 
 ### Built and verified
 
@@ -106,7 +106,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-002 DNS resolution and pinning | resolver-injected pinning, redirect revalidation | proxy CONNECT targets |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-004 Execution grants and replay protection | contract, verifier, replay cache, differential suite, ADR-012 | ADR-012 acceptance; audit wiring |
-| E1-005 Run plane | audit chain and ADR-013, fail-closed recording wired into grant acceptance, idempotency with request fingerprints | run state machine, budgets |
+| E1-005 Run plane | audit chain and ADR-013, fail-closed recording wired into grant acceptance, idempotency with request fingerprints, run state machine with kill from every state | budgets |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -275,7 +275,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               21 acceptance suites, 307 tests
+    ├── foundation/               22 acceptance suites, 317 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -510,7 +510,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 51/51 across the Scope Guard, grant, audit and run modules.
+  **Enforced** by `check:mutation`, currently 59/59 across the Scope Guard, grant, audit and run modules.
 
 ### Mutation testing, and why it is a catalogue
 
@@ -591,7 +591,7 @@ verifies against the files on disk.
 ## Open decisions that need a human
 
 [`08-specification-conflicts.md`](docs/08-agent/08-specification-conflicts.md)
-holds **17 open conflicts** between normative documents, two of them now carrying a proposed ADR,. The operating manual
+holds **18 open conflicts** between normative documents, two of them now carrying a proposed ADR,. The operating manual
 forbids taking the less restrictive reading silently, so until each is decided
 the stricter reading applies and the choice is recorded.
 
