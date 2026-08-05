@@ -68,6 +68,42 @@ spelling the signed scope never contained.
 it is that it covers every address. Calling it malformed would hide that, so it
 classifies as `unspecified` and the prefix minimum applies at eligibility.
 
+## Differential conformance
+
+Agreeing on stated vectors is weaker than it looks. `address-policy-differential`
+mutates every vector into the shapes that historically defeat URL and host
+filters — whitespace and control characters at both edges and spliced into the
+middle, case folding of the whole input and of the authority alone, a trailing
+dot — and requires both implementations to reach the same verdict on all 690.
+
+The assertion that matters is stated on its own: **the runtime must never admit
+what the contract rejects.** A runtime stricter than the contract is a usability
+problem; a runtime looser than the contract is an authorisation boundary with a
+hole in it.
+
+It found three, and the first is a live CVE class:
+
+**Normalise-then-trust.** `urlsplit` follows the WHATWG rule and silently removes
+ASCII tab, carriage return, newline and leading C0 controls *before* parsing, so
+it answers about a string the caller never supplied. `http://local\nhost:8081/`
+became a loopback URL and was judged eligible while the contract rejected the
+literal. That is the mechanism behind CVE-2022-0391 and CVE-2023-24329 in Python
+itself, and behind CVE-2026-44889 in WebOb, where `/\tattacker.com` survived a
+filter and reappeared as `//attacker.com`. Both parsers now refuse a control
+character or space before parsing rather than after.
+
+**A port classified by its host.** `urlsplit.hostname` tolerates what
+`urlsplit.port` refuses, so `http://localhost:99999/` classified as loopback —
+and the URL pattern agreed, because it allowed five digits. Both were wrong in
+the same direction, which is why the vectors could not catch it. The pattern now
+expresses the real range and the runtime reads the port.
+
+**Case folding.** A scheme and a host are case-insensitive, so `urlsplit`
+lowercases them and reported `http://LOCALHOST/` as loopback. The scope patterns
+are lowercase-only, so that spelling cannot appear in a signed scope. Case
+folding belongs to whoever canonicalises a target before signing, not to the
+check that reads the signature.
+
 There is also a hazard worth stating for anyone writing a third implementation.
 Python's `ipaddress.ip_address("169.254.169.254").is_private` returns **`True`**
 — the cloud metadata endpoint, the one address the threat model most wants

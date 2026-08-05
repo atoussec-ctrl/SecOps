@@ -4,6 +4,70 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — the runtime was wider than the contract
+
+### Why this was looked for
+
+E1-001 landed with two implementations agreeing on 70 stated vectors. Agreement
+on the cases someone thought of is weaker than it looks, so the two were run
+against inputs nobody wrote down.
+
+### Defects fixed
+
+**Control characters were normalised, then trusted.** `urlsplit` follows the
+WHATWG rule and silently removes ASCII tab, carriage return, newline and leading
+C0 controls before parsing, so it answers about a string the caller never
+supplied. `http://local\nhost:8081/` became a loopback URL and was judged
+eligible, while the scope contract rejected the literal. The runtime was
+admitting a target the authorisation boundary never contained.
+
+This is not a hypothesis. It is the mechanism behind CVE-2022-0391 and
+CVE-2023-24329 in Python itself, and behind CVE-2026-44889 in WebOb, where
+`/\tattacker.com` survived a filter and reappeared as `//attacker.com` — a
+bypass of an earlier fix for the same bug. Both parsers here now refuse a
+control character or space before parsing rather than after.
+
+**A port outside the range was classified by its host.** `urlsplit.hostname`
+tolerates what `urlsplit.port` refuses, and nothing called `port`, so
+`http://localhost:99999/` classified as loopback. The contract agreed, because
+its URL pattern allowed five digits. Both were wrong in the same direction, so
+the vectors could not catch it. The pattern now expresses the real range and the
+runtime reads the port.
+
+**Case folding widened the runtime.** A scheme and a host are case-insensitive,
+so `urlsplit` lowercases them and reported `http://LOCALHOST/` as loopback. The
+scope patterns are lowercase-only, so that spelling cannot appear in a signed
+scope. Case folding belongs to whoever canonicalises a target before signing,
+not to the check that reads the signature.
+
+### Differential conformance
+
+`tests/foundation/address-policy-differential.test.mjs` mutates every vector
+into the shapes that historically defeat URL and host filters — whitespace and
+control characters at both edges and in the middle, case folding of the whole
+input and of the authority alone, a trailing dot — and requires the JSON Schema
+patterns and the Python classifier to reach the same verdict on all 690.
+
+One assertion is stated separately because it is the one that matters: the
+runtime must never admit what the contract rejects. A runtime stricter than the
+contract is a usability problem; a runtime looser than the contract is an
+authorisation boundary with a hole in it.
+
+The suite was verified to bite. Weakening the host-case comparison produces
+`url uppercased authority: "http://LOCALHOST:8081/" — contract rejects, runtime
+says eligible`.
+
+Two of my own mistakes were found while writing it. The embedded-character
+mutations were anchored to `[a-z]`, so they were silent no-ops on every numeric
+input, and the null-byte mutation appended a space. Mutations now splice into
+the middle of the input and a mutation that changed nothing is dropped rather
+than asserted on.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 8 checks, 284 Node tests, 13 Python tests,
+exit 0. 75 conformance vectors, 690 mutated inputs.
+
 ## E1-001 — Special-range address policy, Python implementation
 
 Status: **implemented**. Depends on: E0-004. Phase 1.
@@ -27,7 +91,7 @@ nothing, which is why presence was never accepted as evidence.
 
 The repository has claimed since ADR-011 that a language-neutral contract keeps
 a Python service and a TypeScript console honest. Until now only one side
-existed. Both sides are now tested against the same 70 vectors, so a
+existed. Both sides are now tested against the same vectors, so a
 cross-language disagreement is a test failure rather than a production surprise.
 
 ### Divergences the second implementation found
@@ -79,7 +143,8 @@ quietly. The digest was recomputed with `tools/scope-hash.mjs`.
 ### Tests executed
 
 `node tools/repo.mjs check:all` — 8 checks, 280 Node tests, 13 Python tests,
-exit 0.
+exit 0 at the time this entry was written; see the revision above for the
+current figures.
 
 ### Known limitations and remaining risk
 
