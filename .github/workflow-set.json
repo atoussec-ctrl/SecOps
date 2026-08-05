@@ -4,7 +4,11 @@
     "pr": {
       "name": "Pull request",
       "triggers": {
-        "pull_request": { "branches": ["main"] }
+        "pull_request": {
+          "branches": [
+            "main"
+          ]
+        }
       },
       "permissions": {
         "contents": "read"
@@ -73,6 +77,11 @@
               "name": "Run the orchestrator suite",
               "kind": "run",
               "command": "node tools/repo.mjs check:orchestrator"
+            },
+            {
+              "name": "Assert the mutation catalogue",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:mutation"
             }
           ]
         }

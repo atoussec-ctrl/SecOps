@@ -1,0 +1,96 @@
+{
+  "catalogue_version": "1.0.0",
+  "suite": {
+    "root": "services/orchestrator",
+    "command": [
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-t",
+      "."
+    ]
+  },
+  "threshold_percent": 80,
+  "mutants": [
+    {
+      "file": "scope/resolution.py",
+      "property": "every resolved address is checked, not only the first",
+      "find": "for address in addresses:",
+      "replace": "for address in addresses[:1]:"
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "a name that resolves to nothing gives no permission to connect",
+      "find": "if not answers:",
+      "replace": "if False:"
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "a redirect is validated again rather than inheriting the previous pin",
+      "find": "pinned = resolve_url_and_pin(location, resolver)",
+      "replace": "pinned = previous"
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "a connection may only use an address the pin authorised",
+      "find": "if address not in pinned.addresses:",
+      "replace": "if False:"
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "one name answering differently within an execution is refused",
+      "find": "if pinned.hostname == previous.hostname and set(pinned.addresses) != set(",
+      "replace": "if False and set(pinned.addresses) != set("
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "only loopback and private answers may be connected to",
+      "find": "_CONNECT_PERMITTED: Final = frozenset({\"loopback\", \"private\"})",
+      "replace": "_CONNECT_PERMITTED: Final = frozenset({\"loopback\", \"private\", \"public\", \"link-local\"})"
+    },
+    {
+      "file": "scope/resolution.py",
+      "property": "a destination the signed scope could not contain is never resolved",
+      "find": "if not is_scope_eligible(target, \"hostname\") and not is_scope_eligible(",
+      "replace": "if False and not is_scope_eligible("
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "a URL carrying a control character is refused before parsing",
+      "find": "if any(character <= \" \" or character == \"\\x7f\" for character in value):",
+      "replace": "if False:"
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "a port outside the real range is not classified by its host",
+      "find": "        parts.port\n    except ValueError:",
+      "replace": "        pass\n    except ValueError:"
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "a case-folded authority is not eligible, because a signed scope is lowercase",
+      "find": "if parts.netloc != parts.netloc.lower():",
+      "replace": "if False:"
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "a case-folded hostname is not eligible either",
+      "find": "if value != value.lower():",
+      "replace": "if False:"
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "the named special ranges decide before ipaddress.is_private ever could",
+      "find": "    if address == _BROADCAST:",
+      "replace": "    if address.is_private:\n        return \"private\"\n    if address == _BROADCAST:"
+    },
+    {
+      "file": "scope/address_policy.py",
+      "property": "an absolute name is refused, because the scope pattern has no trailing dot",
+      "find": "return not value.endswith(\".\")",
+      "replace": "return True"
+    }
+  ]
+}

@@ -43,3 +43,5 @@ jobs:
         run: node tools/repo.mjs check:foundation
       - name: Run the orchestrator suite
         run: node tools/repo.mjs check:orchestrator
+      - name: Assert the mutation catalogue
+        run: node tools/repo.mjs check:mutation

@@ -90,6 +90,8 @@ class StandardLibraryIsNotThePolicy(unittest.TestCase):
             ("240.0.0.1", "reserved", "reserved for future use"),
             ("0.1.2.3", "unspecified", "this network"),
             ("255.255.255.255", "broadcast", "limited broadcast"),
+            ("192.0.0.1", "reserved", "IETF protocol assignments"),
+            ("192.0.0.170", "reserved", "NAT64/DNS64 discovery"),
         ]
 
         for value, expected, why in trapped:
@@ -130,6 +132,25 @@ class AlternateSpellings(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual(classify(value, "ipv6"), "ipv4-mapped")
                 self.assertFalse(is_scope_eligible(value, "ipv6"))
+
+    def test_a_folded_host_is_classified_but_not_eligible(self) -> None:
+        # urlsplit lowercases a scheme and a host because both are
+        # case-insensitive, so it would report these as loopback. The scope
+        # patterns are lowercase-only, so neither spelling could appear in a
+        # signed scope, and admitting one would mean the runtime accepting a
+        # literal the authorisation boundary never contained.
+        for value, kind in (
+            ("http://LOCALHOST:8081/", "url"),
+            ("HTTP://localhost:8081/", "url"),
+            ("http://WEB.LAB.TEST/", "url"),
+            ("WEB.LAB.TEST", "hostname"),
+            ("Web.Lab.Test", "hostname"),
+        ):
+            with self.subTest(value=value):
+                self.assertFalse(is_scope_eligible(value, kind), value)
+
+        self.assertTrue(is_scope_eligible("http://localhost:8081/", "url"))
+        self.assertTrue(is_scope_eligible("web.lab.test", "hostname"))
 
     def test_userinfo_cannot_disguise_a_public_host(self) -> None:
         self.assertEqual(classify("http://localhost@example.com/", "url"), "malformed")

@@ -58,6 +58,11 @@ _LINK_LOCAL_IPV4: Final = ipaddress.ip_network("169.254.0.0/16")
 _MULTICAST_IPV4: Final = ipaddress.ip_network("224.0.0.0/4")
 _CGNAT: Final = ipaddress.ip_network("100.64.0.0/10")
 _BENCHMARKING_IPV4: Final = ipaddress.ip_network("198.18.0.0/15")
+# IETF protocol assignments: DS-Lite, the NAT64/DNS64 discovery pair and
+# similar. Assigned to a protocol rather than to a host, so no engagement owns
+# one. Falling through to "public" would deny it for the wrong reason, and a
+# reason that happens to be right is not a rule.
+_PROTOCOL_ASSIGNMENTS: Final = ipaddress.ip_network("192.0.0.0/24")
 _RESERVED_IPV4: Final = ipaddress.ip_network("240.0.0.0/4")
 _BROADCAST: Final = ipaddress.ip_address("255.255.255.255")
 _DOCUMENTATION_IPV4: Final = (
@@ -125,7 +130,7 @@ def _classify_ipv4(address: ipaddress.IPv4Address) -> Classification:
         return "documentation"
     if address in _BENCHMARKING_IPV4:
         return "benchmarking"
-    if address in _RESERVED_IPV4:
+    if address in _PROTOCOL_ASSIGNMENTS or address in _RESERVED_IPV4:
         return "reserved"
     if any(address in network for network in _LAB_IPV4):
         return "private"
@@ -158,14 +163,23 @@ def _classify_hostname(value: str) -> Classification:
     if any(character <= " " or character == "\x7f" for character in value):
         return "malformed"
 
-    if value == "localhost":
-        return "loopback"
-
-    # A single trailing dot is the DNS root label and makes the name absolute,
-    # not malformed. Classifying it as malformed would suggest the hazard in
+    # Two normalisations happen before anything is decided, because both change
+    # only the spelling and not the host.
+    #
+    # A single trailing dot is the DNS root label and makes the name absolute.
+    # Classifying it as malformed would suggest the hazard in
     # "localhost.example.com." is its syntax, when the hazard is that a public
     # name can begin with a word that looks like loopback.
+    #
+    # DNS is case-insensitive, so WEB.LAB.TEST names the same host as
+    # web.lab.test. Folding keeps classification a statement about the host;
+    # whether that *spelling* could appear in a signed scope is decided by
+    # is_scope_eligible, which is a different question with a different answer.
     name = value[:-1] if value.endswith(".") else value
+    name = name.lower()
+
+    if name == "localhost":
+        return "loopback"
 
     if not _HOSTNAME.match(name):
         return "malformed"

@@ -61,11 +61,11 @@ runtime services are not yet built.
 | Markdown documents | 109 (68 under `docs/`) |
 | Architecture decision records | 11 accepted, plus an index |
 | Reusable templates | 8 |
-| JSON Schema contracts | 10 |
+| JSON Schema contracts | 11 |
 | Verification modules (`tools/`) | 9 |
-| Repository checks | 8 |
-| Foundation test suites | 16 |
-| Tests | 284 Node, 13 Python, all passing |
+| Repository checks | 9 |
+| Foundation test suites | 18 |
+| Tests | 288 Node, 31 Python, all passing |
 
 ### Built and verified
 
@@ -102,7 +102,8 @@ something to be tested against rather than a paragraph to interpret.
 
 | Backlog task | What is built | What remains |
 | --- | --- | --- |
-| E1-001 Special-range address policy | 75 vectors, the Python classifier and a 690-input differential suite | DNS resolution, pinning, redirect revalidation (E1-002) |
+| E1-001 Special-range address policy | 77 vectors, the Python classifier and a 690-input differential suite | complete |
+| E1-002 DNS resolution and pinning | resolver-injected pinning, redirect revalidation | proxy CONNECT targets |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
@@ -139,7 +140,7 @@ That is the single documented bootstrap command. It runs every check in
 dependency order and stops at the first failure. Expected output ends with:
 
 ```
-All 8 checks passed.
+All 9 checks passed.
 ```
 
 To see what is available:
@@ -171,7 +172,8 @@ vector.
 | `check:exposure` | Asserts the generated lab topology binds no target to a host-reachable address, grants no privileged mode and declares no host network. Unpinned images are reported as deferred, not passed. |
 | `check:workflows` | Enforces minimal workflow permissions, action pinning by commit SHA, the absence of `pull_request_target`, and that every workflow file on disk is byte-identical to what its descriptor renders. |
 | `check:orchestrator` | Runs the Python orchestrator suite against the same conformance vectors the Node suite uses. A missing interpreter fails the check; it is never skipped. |
-| `check:all` | Runs all eight in bootstrap order and stops at the first failure. |
+| `check:mutation` | Applies each catalogued defect to a copy of the orchestrator and requires the suite to fail. A surviving mutant names the safety property that is no longer guaranteed. |
+| `check:all` | Runs all nine in bootstrap order and stops at the first failure. |
 
 `check:all` is verified by running it rather than by a test: it invokes
 `check:foundation`, so a test that executed it would recurse into the suite that
@@ -271,7 +273,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               16 acceptance suites, 284 tests
+    ├── foundation/               18 acceptance suites, 288 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -505,8 +507,40 @@ Done, which requires the evidence — not the intention — to exist.
 - **Coverage**: at least 95% line, statement, function and branch for
   application code.
 - **Mutation**: at least 80% for security-critical modules
-  ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)). No
-  mutation tooling is installed yet.
+  ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
+  **Enforced** by `check:mutation`, currently 13/13 on the Scope Guard modules.
+
+### Mutation testing, and why it is a catalogue
+
+Coverage says a line ran. It does not say a test would have noticed the line
+being *wrong*, and for the Scope Guard that difference is the entire point.
+
+Each mutant is a safety property written as the edit that removes it:
+
+```json
+{
+  "file": "scope/resolution.py",
+  "property": "every resolved address is checked, not only the first",
+  "find": "for address in addresses:",
+  "replace": "for address in addresses[:1]:"
+}
+```
+
+A survivor therefore reads as a sentence about what is no longer guaranteed
+rather than as a line number. Nothing is mutated in place: the module tree is
+copied to a temporary directory, so an interrupted run cannot leave a deliberate
+defect behind.
+
+The check fails closed in both directions a mutation run can lie. A suite that
+fails *before* any mutation would make every mutant look killed, so the baseline
+is run first. A catalogue anchor that no longer matches its source would run the
+suite against unmutated code and record a kill, so a stale anchor is a failure
+rather than a pass.
+
+Writing the catalogue found three real defects the passing suite had not: two
+untested case-folding rules, and `192.0.0.0/24` — IETF protocol assignments,
+which Python reports as private and which nothing in the vectors distinguished
+from a lab address.
 
 Current measurement over `tools/`, with the foundation suite:
 
