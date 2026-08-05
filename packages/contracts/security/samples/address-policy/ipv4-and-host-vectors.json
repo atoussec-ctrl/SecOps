@@ -344,6 +344,41 @@
       "classification": "malformed",
       "in_scope_eligible": false,
       "rationale": "Userinfo disguising a public host as loopback."
+    },
+    {
+      "input": "http://local\nhost:8081/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Embedded newline. Python urlsplit removes ASCII tab, CR and LF before parsing, so this would become a loopback URL the signed scope never contained. The literal is refused before parsing."
+    },
+    {
+      "input": "http://localhost\t:8081/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Embedded tab, same normalisation. CVE-2026-44889 turned exactly this shape into an attacker-controlled authority downstream."
+    },
+    {
+      "input": " http://localhost:8081/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Leading space. CVE-2023-24329 bypassed blocklists this way; a parser that trims answers about a string the caller never supplied."
+    },
+    {
+      "input": "http://localhost:99999/",
+      "kind": "url",
+      "classification": "malformed",
+      "in_scope_eligible": false,
+      "rationale": "Port above 65535. urlsplit reports the host but raises on the port, so classifying by host alone would accept it."
+    },
+    {
+      "input": "http://localhost:65535/",
+      "kind": "url",
+      "classification": "loopback",
+      "in_scope_eligible": true,
+      "rationale": "The highest real port. The boundary is stated so tightening the range cannot quietly exclude it."
     }
   ]
 }

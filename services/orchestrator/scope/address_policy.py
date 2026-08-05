@@ -153,6 +153,11 @@ def _classify_ipv6(address: ipaddress.IPv6Address) -> Classification:
 
 
 def _classify_hostname(value: str) -> Classification:
+    # Same rule as for URLs: a control character or space is refused rather than
+    # trimmed, so no later stage decides what the caller meant.
+    if any(character <= " " or character == "\x7f" for character in value):
+        return "malformed"
+
     if value == "localhost":
         return "loopback"
 
@@ -172,12 +177,33 @@ def _classify_hostname(value: str) -> Classification:
 
 
 def _classify_url(value: str) -> Classification:
+    # Refuse before parsing, never after. Since 3.10 ``urlsplit`` follows the
+    # WHATWG rule and silently removes ASCII tab, carriage return, newline and
+    # leading C0 control characters, so it answers about a string the caller
+    # never supplied. That normalisation is the mechanism behind CVE-2022-0391,
+    # CVE-2023-24329 and, in a downstream library, CVE-2026-44889, where
+    # "/\tattacker.com" survived a filter and reappeared as "//attacker.com".
+    #
+    # Here it would be worse than an open redirect: "http://local\nhost/"
+    # normalises to a loopback host and would be judged eligible, while the
+    # signed scope contract rejects the literal. The runtime would then admit a
+    # target the authorisation boundary never contained.
+    if any(character <= " " or character == "\x7f" for character in value):
+        return "malformed"
+
     try:
         parts = urlsplit(value)
     except ValueError:
         return "malformed"
 
     if parts.scheme not in _PERMITTED_SCHEMES:
+        return "malformed"
+
+    # ``hostname`` tolerates a port that ``port`` refuses, so an out-of-range
+    # port would otherwise be classified by its host alone.
+    try:
+        parts.port
+    except ValueError:
         return "malformed"
 
     # Userinfo lets a public host hide behind a private-looking prefix, which
@@ -283,11 +309,27 @@ def is_scope_eligible(value: str, kind: Kind) -> bool:
     # forms it classifies as safe but cannot write down. A divergence here is
     # the failure the shared vectors exist to catch: the runtime admitting a
     # spelling the signed scope could never have contained.
+    # A scheme and a host are case-insensitive, so urlsplit lowercases them and
+    # would report "HTTP://LOCALHOST/" as loopback. The scope patterns are
+    # lowercase-only, so that spelling cannot appear in a signed scope, and
+    # accepting it would make the runtime admit a literal the authorisation
+    # boundary never contained. Case folding belongs to whoever canonicalises a
+    # target before signing, not to the check that reads the signature.
     if kind == "hostname":
+        if value != value.lower():
+            return False
         return not value.endswith(".")
 
     if kind == "url":
         parts = urlsplit(value)
+
+        # netloc is the raw authority; hostname is the folded one. Comparing
+        # the raw text is what catches the folding.
+        if parts.netloc != parts.netloc.lower():
+            return False
+        if value[: len(parts.scheme)] != parts.scheme:
+            return False
+
         host = parts.hostname or ""
         if ":" in host:
             return False

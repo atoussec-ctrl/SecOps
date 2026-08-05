@@ -64,8 +64,8 @@ runtime services are not yet built.
 | JSON Schema contracts | 10 |
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 8 |
-| Foundation test suites | 15 |
-| Tests | 280 Node, 13 Python, all passing |
+| Foundation test suites | 16 |
+| Tests | 284 Node, 13 Python, all passing |
 
 ### Built and verified
 
@@ -87,7 +87,7 @@ runtime services are not yet built.
 This is the design's central claim being paid off. The JSON Schema in the scope
 contract decides what an operator may *write down*; the Python module decides
 what the runtime does with a destination that arrives another way, through DNS
-resolution or a redirect. Both are tested against the **same 70 conformance
+resolution or a redirect. Both are tested against the **same 75 conformance
 vectors**, so a disagreement between the two languages is a test failure rather
 than a production surprise.
 
@@ -102,7 +102,7 @@ something to be tested against rather than a paragraph to interpret.
 
 | Backlog task | What is built | What remains |
 | --- | --- | --- |
-| E1-001 Special-range address policy | 70 vectors **and the Python classifier** | DNS resolution, pinning, redirect revalidation (E1-002) |
+| E1-001 Special-range address policy | 75 vectors, the Python classifier and a 690-input differential suite | DNS resolution, pinning, redirect revalidation (E1-002) |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
@@ -271,7 +271,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               15 acceptance suites, 280 tests
+    ├── foundation/               16 acceptance suites, 284 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
