@@ -65,7 +65,7 @@ runtime services are not yet built.
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
 | Foundation test suites | 22 |
-| Tests | 317 Node, 154 Python, all passing |
+| Tests | 317 Node, 176 Python, all passing |
 
 ### Built and verified
 
@@ -107,6 +107,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
 | E1-004 Execution grants and replay protection | contract, verifier, replay cache, differential suite, ADR-012 | ADR-012 acceptance; audit wiring |
 | E1-005 Run plane | **complete** — audit chain, fail-closed recording, idempotency, run state machine, budgets charged on issue | wiring budgets to adapter invocation (E1-007) |
+| E1-006 Global kill and heartbeat | kill switch that refuses rather than returning a boolean, heartbeat with derived bounds | wiring the sweep to run cancellation |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -510,7 +511,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 74/74 across the Scope Guard, grant, audit and run modules.
+  **Enforced** by `check:mutation`, currently 85/85 across the Scope Guard, grant, audit and run modules.
 
 ### Mutation testing, and why it is a catalogue
 
@@ -591,7 +592,7 @@ verifies against the files on disk.
 ## Open decisions that need a human
 
 [`08-specification-conflicts.md`](docs/08-agent/08-specification-conflicts.md)
-holds **18 open conflicts** between normative documents, two of them now carrying a proposed ADR,. The operating manual
+holds **19 open conflicts** between normative documents, two of them now carrying a proposed ADR,. The operating manual
 forbids taking the less restrictive reading silently, so until each is decided
 the stricter reading applies and the choice is recorded.
 
