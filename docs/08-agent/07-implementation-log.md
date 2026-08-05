@@ -4,6 +4,80 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-005 (part) — Fail-closed recording and idempotent operations
+
+Status: **partial**. Depends on: E1-004. Phase 1.
+
+### Audit-store failure blocks privileged execution
+
+[`04-orchestrator-spec.md`](../03-applications/04-orchestrator-spec.md) lists
+that among its safety tests, and
+[`08-observability.md`](../05-devsecops/08-observability.md) names an
+unavailable audit store among the conditions that stop work. Nothing satisfied
+either: the previous entry built a chain that nothing wrote to.
+
+`audit/recorder.py` runs the check, writes the record, and only then lets the
+caller act. The direction that matters is an **allowed** decision whose record
+cannot be written: the check passed, and the operation is still refused, because
+a privileged action nobody can later account for is worse than one that did not
+happen. `guard` raises rather than returning, so there is no code path where a
+caller holds a result and no record of it — asserted by a test that fails if
+`guard` ever returns in that case.
+
+A refusal whose record fails is refused twice over and needs no argument, so the
+refusal is re-raised unchanged rather than converted into a store error. Hiding
+why an operation stopped behind "the audit store is broken" would be a worse
+answer than the true one.
+
+`UnrecordableDecision` is deliberately a different type from `AuditRefused`. Both
+stop the operation; only one of them means the store is broken, and an operator
+needs to tell those apart.
+
+### A reason is not a free-text field
+
+Refusal reasons are written for a person and carry addresses, identifiers and
+quoted values. The audit contract has no free-text type and bounds a fact at 200
+characters, so the reason is truncated on the way in rather than allowed to
+become the field the contract deliberately lacks. A test pins the truncation.
+
+### Idempotency: the second request is the hard one
+
+Retrying a start after a timeout must not begin a second run, and that is the
+easy half. The hard half is the same key arriving with a **different** request.
+
+Current guidance is unambiguous, and it is a security property rather than a
+correctness one: store a fingerprint of the request beside the key and **refuse**
+a mismatch, because serving the cached answer is how a payload substitution
+succeeds without anything looking wrong. A key here binds to exactly one request.
+
+The fingerprint is a digest over the same canonical form the scope digest and the
+audit chain use, so key order cannot change it and two descriptions of one
+request agree across languages.
+
+Three refusals that are easy to get wrong in the permissive direction:
+
+- a claim still **in flight** is refused rather than answered; saying "done"
+  would be a lie and running it again would defeat the key;
+- a **completed** claim is never released, so a failed-work release cannot let
+  one key run its operation twice;
+- a key shorter than eight characters is refused, because a key that can collide
+  by accident makes every guarantee above coincidental.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 307 Node tests, 95 Python tests,
+48/48 mutants killed, exit 0. Nine mutants added.
+
+### Known limitations and remaining risk
+
+- **The call sites are still not wired.** `guard` exists and is tested; the
+  grant verifier and the resolver do not call it yet. That is deliberate: the
+  wiring changes their signatures, and doing it in the same commit as the
+  recorder would have made both harder to review.
+- The idempotency store is in memory, like the audit chain. Durability is
+  E1-008.
+- The run state machine and budgets — the rest of E1-005 — are not built.
+
 ## E1-005 (part) — Tamper-evident audit chain
 
 Status: **implemented against a proposed ADR**. Depends on: E1-004. Phase 1.
