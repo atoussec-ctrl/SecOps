@@ -12,7 +12,7 @@
   E1-002 DNS pinning and E1-004 execution grants implemented; E1-003, E1-010
   and E1-013 contracts complete, runtimes pending
 - Bootstrap command: `node tools/repo.mjs check:all`
-- Verification: 9 checks, 317 Node tests, 147 Python tests, 71/71 mutants killed
+- Verification: 9 checks, 317 Node tests, 149 Python tests, 72/72 mutants killed
 
 ## Sections
 

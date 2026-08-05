@@ -4,6 +4,47 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — the rate budget could be doubled
+
+### Defect fixed
+
+The requests-per-second budget was a fixed-window counter keyed on the current
+second. A fixed window passes up to **twice** its limit across the edge, and the
+budget measured here did exactly that:
+
+```
+requests issued within 1 ms: 10  (budget says 5 per second)
+```
+
+Five requests at `12:00:00.999`, five more at `12:00:01.000`. The scope contract
+caps `max_requests_per_second` at 50, so an operator authorising 50 could get
+100 — against a budget whose stated purpose (TM-D-001) is stopping a scanner
+from exhausting a target.
+
+### Sliding window log, and why not a token bucket
+
+Current guidance sorts the algorithms by use: token bucket for most per-user API
+limits, sliding window counter where boundary bursts matter, and **sliding window
+log for sensitive, low-volume security controls**. That is this case exactly.
+
+A token bucket would be the wrong choice for the opposite reason: it permits
+controlled bursts *by design*, and the authorised rate is precisely what must not
+be exceeded.
+
+The usual objection to a log is memory, and it does not apply here. The scope
+contract caps the rate, so the window holds at most that many timestamps however
+long the run lasts. A test walks 500 seconds of requests and asserts the window
+never exceeds the limit.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 149 Python tests,
+72/72 mutants killed, exit 0.
+
+One catalogued mutant stopped matching, which is the stale-anchor check working
+again. It was restated, and a second mutant added for the sliding boundary
+itself: reverting the window to a fixed one now fails.
+
 ## E1-005 — Budgets, and the task is complete
 
 Status: **complete**. Depends on: E1-004. Phase 1.

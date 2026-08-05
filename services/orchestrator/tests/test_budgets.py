@@ -72,13 +72,43 @@ class RequestsPerSecond(unittest.TestCase):
 
         self.assertIn("requests per second", raised.exception.reason)
 
-    def test_the_allowance_refreshes_each_second(self) -> None:
+    def test_the_allowance_refreshes_a_full_second_later(self) -> None:
         budget = a_budget()
 
         for _ in range(5):
             budget.reserve_request(AT)
 
-        budget.reserve_request(AT + timedelta(seconds=1))
+        budget.reserve_request(AT + timedelta(seconds=1, microseconds=1))
+
+    def test_the_rate_cannot_be_doubled_across_a_second_boundary(self) -> None:
+        # A fixed-window counter passes up to twice the limit across its edge.
+        # Five requests at 12:00:00.999 and five more at 12:00:01.000 is ten
+        # requests in a millisecond against a budget of five per second, which
+        # is what this budget did before the window became a sliding one.
+        budget = a_budget()
+        issued = 0
+
+        with self.assertRaises(BudgetExceeded):
+            for moment in (
+                AT + timedelta(microseconds=999_000),
+                AT + timedelta(seconds=1),
+            ):
+                for _ in range(5):
+                    budget.reserve_request(moment)
+                    issued += 1
+
+        self.assertEqual(issued, 5, "the rate was exceeded across the boundary")
+
+    def test_the_window_does_not_grow_without_bound(self) -> None:
+        # The usual objection to a sliding window log. It does not apply here:
+        # the scope contract caps the rate, so the window holds at most that
+        # many timestamps however long the run lasts.
+        budget = a_budget(max_duration_seconds=3600)
+
+        for index in range(500):
+            budget.reserve_request(AT + timedelta(seconds=index))
+
+        self.assertLessEqual(len(budget._window), LIMITS["max_requests_per_second"])
 
     def test_a_request_that_never_returns_still_costs(self) -> None:
         # The reason charging happens on issue. A scanner exhausting a target is
