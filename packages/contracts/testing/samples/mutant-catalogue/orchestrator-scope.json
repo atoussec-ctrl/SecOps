@@ -193,6 +193,60 @@
       "property": "duplicate pinned addresses are refused",
       "find": "    if len(set(addresses)) != len(addresses):",
       "replace": "    if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "an altered entry is detected by its digest",
+      "find": "if not hmac.compare_digest(str(entry[\"entry_digest\"]), expected):",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a broken link between two entries is detected",
+      "find": "if entry[\"previous_digest\"] != previous:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a removed or reordered entry is detected by its sequence",
+      "find": "if entry[\"sequence\"] != position:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a truncated chain fails against an anchored head digest",
+      "find": "if expected_head is not None and previous != expected_head:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "an entry with no facts is refused",
+      "find": "    if not isinstance(facts, (list, tuple)) or not facts:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a fact cannot declare a type outside the contract vocabulary",
+      "find": "if fact[\"type\"] not in _FACT_TYPES:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a fact value is length bounded so it cannot smuggle a payload",
+      "find": "if not isinstance(value, str) or not 1 <= len(value) <= _MAXIMUM_FACT_LENGTH:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "an undeclared action cannot be logged",
+      "find": "if entry.get(\"action\") not in _ACTIONS:",
+      "replace": "if False:"
+    },
+    {
+      "file": "audit/chain.py",
+      "property": "a refused entry never enters the chain",
+      "find": "        _assert_entry_shape(entry)\n\n        self.entries.append(entry)",
+      "replace": "        self.entries.append(entry)"
     }
   ]
 }
