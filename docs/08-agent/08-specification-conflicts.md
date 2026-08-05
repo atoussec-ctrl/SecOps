@@ -10,7 +10,7 @@ implementing agent applies the **stricter** reading and records the choice.
 
 ## Status
 
-Seventeen entries are open. Entry 12 has a **proposed** ADR ([ADR-012](../../adrs/012-execution-grants.md))
+Eighteen entries are open. Entry 12 has a **proposed** ADR ([ADR-012](../../adrs/012-execution-grants.md))
 and entries 4 and 12 are partially addressed. None has an *accepted* ADR, so
 every entry still applies the stricter reading until reviewed.
 
@@ -177,6 +177,21 @@ every entry still applies the stricter reading until reviewed.
     `packages/contracts/security/samples/run-lifecycle/orchestrator.json` and
     named in the tests, so the extra edges are not mistaken for an accident.
     Blocks: E1-006.
+
+19. **An unavailable kill switch alerts, and nobody says whether work stops.**
+    `05-devsecops/08-observability.md:58-66` lists "kill switch or audit store
+    unavailable" among the conditions that raise an immediate alert. For the
+    audit store, `03-applications/04-orchestrator-spec.md:117` also states that
+    failure blocks privileged execution. For the kill switch there is no such
+    statement, so an alert is all the specification asks for, and an alert is
+    something a person reads later.
+    A run that cannot be stopped is the definition of unsafe, so the stricter
+    reading is applied: work stops when the switch cannot be consulted, and the
+    API refuses rather than returning "not revoked". A boolean cannot carry the
+    difference between *not revoked* and *cannot tell*, which is why
+    `assert_permitted` raises instead of `is_revoked` returning.
+    A latency objective for the kill is still missing and belongs with entry 4.
+    Blocks: nothing; the stricter reading is safe to build on.
 
 ## Version and toolchain policy
 

@@ -4,6 +4,77 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-006 — Global kill and adapter heartbeat
+
+Status: **implemented**. Depends on: E1-005. Phase 1.
+
+### A gap recorded before it was filled
+
+[`08-observability.md`](../05-devsecops/08-observability.md) lists "kill switch
+or audit store unavailable" among the conditions that raise an immediate alert.
+For the audit store, `04-orchestrator-spec.md:117` also states that failure
+blocks privileged execution. **For the kill switch there is no such statement**,
+so an alert is all the specification asks for — and an alert is something a
+person reads later.
+
+Recorded as conflict 19. The stricter reading is applied, because a run that
+cannot be stopped is the definition of unsafe.
+
+### A boolean cannot carry "cannot tell"
+
+`is_revoked` returning `False` from an unreachable switch reads exactly like
+`False` from a healthy one, and the caller proceeds. So the question is not
+asked that way. `assert_permitted` raises for a revoked run **and** for a
+switch that cannot answer, and `SwitchUnavailable` is a subclass of `RunStopped`
+so a caller that stops for one stops for the other without having to know about
+both.
+
+A test asserts there is no `is_revoked` at all. The absence is the design.
+
+### A global kill covers runs that do not exist yet
+
+Stopping only known runs would let one started a moment later proceed, which is
+the case an operator is reaching for the switch to prevent.
+
+### Absence of a heartbeat is a stop signal, not a neutral state
+
+The classic mistake is treating "has never beaten" as healthy, because there is
+no previous beat to compare against. Registration is therefore itself the first
+beat: an adapter that never reports goes stale on exactly the same schedule as
+one that stopped reporting. An unwatched run is refused rather than assumed
+alive.
+
+A beat dated before the previous one is refused too. That is a clock problem or
+a replayed message, and accepting it would extend the silence window backwards.
+
+### The timeout is bounded from both sides
+
+Ten-second interval, thirty-second timeout, and both bounds asserted at
+construction rather than commented:
+
+- **at least two intervals**, or one lost beat stops a healthy run;
+- **under the 300-second grant maximum**, or a lost adapter outlives its own
+  authorisation before anyone notices, and the heartbeat adds nothing the grant
+  window was not already doing.
+
+The interval itself is a choice, not a derivation. Conflict 4 still records that
+kill-switch latency is measured without an objective, so the number is
+provisional and the relationships around it are not.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 176 Python tests,
+85/85 mutants killed, exit 0. Eleven mutants added.
+
+### Known limitations and remaining risk
+
+- **Nothing calls the sweep.** `stale()` returns every run that should be
+  stopped; connecting that to `Run.kill` and an audit entry is the next commit.
+- Revocation still reaches the grant verifier as a `frozenset` argument rather
+  than from the switch. That substitution is small and deliberate to keep this
+  change reviewable.
+- Both stores are in memory. Durability is E1-008.
+
 ## Revision — the idempotency store never forgot anything
 
 ### Defect fixed
