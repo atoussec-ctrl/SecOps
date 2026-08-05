@@ -9,10 +9,10 @@
 - Diagram source: Mermaid fenced blocks
 - Implementation status: E0-001 to E0-006 complete; E0-007 base workflow built
   with its gate stages blocked; E1-001 classifier implemented in Python;
-  E1-002 DNS pinning implemented; E1-003, E1-010 and E1-013 contracts complete,
-  runtimes pending
+  E1-002 DNS pinning and E1-004 execution grants implemented; E1-003, E1-010
+  and E1-013 contracts complete, runtimes pending
 - Bootstrap command: `node tools/repo.mjs check:all`
-- Verification: 9 checks, 288 Node tests, 31 Python tests, 13/13 mutants killed
+- Verification: 9 checks, 296 Node tests, 57 Python tests, 24/24 mutants killed
 
 ## Sections
 
@@ -53,6 +53,7 @@
 | `.github/workflow-set.json` | CI workflow descriptor that workflow files are rendered from |
 | `.github/workflows` | Generated workflow files, verified byte-for-byte against the descriptor |
 | `services/orchestrator/scope` | Python address policy and DNS pinning for the Scope Guard (E1-001, E1-002) |
+| `services/orchestrator/grants` | Execution grant issuance, verification and replay cache (E1-004) |
 | `packages/contracts/testing` | Mutant catalogue the mutation check measures against |
 | `tests` | Foundation acceptance suite and capstone assertions |
 

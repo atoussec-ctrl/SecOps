@@ -59,13 +59,13 @@ runtime services are not yet built.
 | | Count |
 | --- | --- |
 | Markdown documents | 109 (68 under `docs/`) |
-| Architecture decision records | 11 accepted, plus an index |
+| Architecture decision records | 11 accepted and 1 proposed, plus an index |
 | Reusable templates | 8 |
-| JSON Schema contracts | 11 |
+| JSON Schema contracts | 12 |
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
-| Foundation test suites | 18 |
-| Tests | 288 Node, 31 Python, all passing |
+| Foundation test suites | 19 |
+| Tests | 296 Node, 57 Python, all passing |
 
 ### Built and verified
 
@@ -105,6 +105,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-001 Special-range address policy | 77 vectors, the Python classifier and a 690-input differential suite | complete |
 | E1-002 DNS resolution and pinning | resolver-injected pinning, redirect revalidation | proxy CONNECT targets |
 | E1-003 Immutable scope snapshot and digest | canonical form, 17 vectors, digest tool | signing, approval and storage |
+| E1-004 Execution grants and replay protection | contract, verifier, replay cache, ADR-012 | ADR-012 acceptance; audit wiring |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -273,7 +274,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               18 acceptance suites, 288 tests
+    ├── foundation/               19 acceptance suites, 296 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -508,7 +509,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 13/13 on the Scope Guard modules.
+  **Enforced** by `check:mutation`, currently 24/24 across the Scope Guard and grant modules.
 
 ### Mutation testing, and why it is a catalogue
 
@@ -579,6 +580,7 @@ no test framework to install.
 | [009](adrs/009-generated-lab-topology.md) | Lab Compose topology generated from a validated descriptor |
 | [010](adrs/010-generated-ci-workflows.md) | CI workflows generated from a validated descriptor |
 | [011](adrs/011-canonical-scope-serialization.md) | Canonical serialization for the scope digest |
+| [012](adrs/012-execution-grants.md) | Execution grant contract, skew and replay window (**proposed**) |
 
 New decisions use [`templates/adr-template.md`](templates/adr-template.md) and
 must be added to [`adrs/000-index.md`](adrs/000-index.md), which `check:docs`
