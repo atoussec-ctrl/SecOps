@@ -21,40 +21,86 @@
     "stop"
   ],
   "properties": {
-    "scope_version": { "$ref": "#/$defs/semantic_version" },
+    "scope_version": {
+      "$ref": "#/$defs/semantic_version"
+    },
     "engagement_id": {
       "type": "string",
       "pattern": "^ENG-[0-9]{4}-[0-9]{4}$"
     },
-    "purpose": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "purpose": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 500
+    },
     "owner": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "contact"],
+      "required": [
+        "name",
+        "contact"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "contact": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "contact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
       }
     },
     "approval": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["approver", "approved_at", "reference", "scope_hash"],
+      "required": [
+        "approver",
+        "approved_at",
+        "reference",
+        "scope_hash"
+      ],
       "properties": {
-        "approver": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "approved_at": { "$ref": "#/$defs/timestamp" },
-        "reference": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "scope_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        "approver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "approved_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scope_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     },
     "validity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["start", "end", "timezone"],
+      "required": [
+        "start",
+        "end",
+        "timezone"
+      ],
       "properties": {
-        "start": { "$ref": "#/$defs/timestamp" },
-        "end": { "$ref": "#/$defs/timestamp" },
-        "timezone": { "type": "string", "pattern": "^(UTC|[A-Za-z]+/[A-Za-z_]+)$" }
+        "start": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "end": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "timezone": {
+          "type": "string",
+          "pattern": "^(UTC|[A-Za-z]+/[A-Za-z_]+)$"
+        }
       }
     },
     "targets": {
@@ -75,75 +121,108 @@
           "minItems": 1,
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
         },
         "hostnames": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/lab_hostname" }
+          "items": {
+            "$ref": "#/$defs/lab_hostname"
+          }
         },
         "ipv4": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/private_ipv4" }
+          "items": {
+            "$ref": "#/$defs/private_ipv4"
+          }
         },
         "cidrs": {
           "type": "array",
           "maxItems": 20,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/private_cidr" }
+          "items": {
+            "$ref": "#/$defs/private_cidr"
+          }
         },
         "urls": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/lab_url" }
+          "items": {
+            "$ref": "#/$defs/lab_url"
+          }
         },
         "ports": {
           "type": "array",
           "minItems": 1,
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/port" }
+          "items": {
+            "$ref": "#/$defs/port"
+          }
         },
         "api_versions": {
           "type": "array",
           "maxItems": 20,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1, "maxLength": 20 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          }
         }
       }
     },
     "exclusions": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["hostnames", "ipv4", "cidrs", "paths"],
+      "required": [
+        "hostnames",
+        "ipv4",
+        "cidrs",
+        "paths"
+      ],
       "properties": {
         "hostnames": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/lab_hostname" }
+          "items": {
+            "$ref": "#/$defs/lab_hostname"
+          }
         },
         "ipv4": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/private_ipv4" }
+          "items": {
+            "$ref": "#/$defs/private_ipv4"
+          }
         },
         "cidrs": {
           "type": "array",
           "maxItems": 20,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/private_cidr" }
+          "items": {
+            "$ref": "#/$defs/private_cidr"
+          }
         },
         "paths": {
           "type": "array",
           "maxItems": 50,
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^/[^\\s]*$", "maxLength": 200 }
+          "items": {
+            "type": "string",
+            "pattern": "^/[^\\s]*$",
+            "maxLength": 200
+          }
         }
       }
     },
@@ -153,7 +232,12 @@
       "maxItems": 2,
       "uniqueItems": true,
       "description": "Destructive tooling is not part of this product, so no destructive profile can be named here (docs/04-security/09-tool-safety-guardrails.md).",
-      "items": { "enum": ["passive", "bounded-active"] }
+      "items": {
+        "enum": [
+          "passive",
+          "bounded-active"
+        ]
+      }
     },
     "budgets": {
       "type": "object",
@@ -167,11 +251,31 @@
         "max_test_records"
       ],
       "properties": {
-        "max_requests_per_second": { "type": "integer", "minimum": 1, "maximum": 50 },
-        "max_concurrency": { "type": "integer", "minimum": 1, "maximum": 16 },
-        "max_duration_seconds": { "type": "integer", "minimum": 1, "maximum": 3600 },
-        "max_response_bytes": { "type": "integer", "minimum": 1, "maximum": 10485760 },
-        "max_test_records": { "type": "integer", "minimum": 1, "maximum": 100 }
+        "max_requests_per_second": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "max_duration_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "max_response_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "max_test_records": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
       }
     },
     "accounts": {
@@ -182,30 +286,56 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["username", "role"],
+        "required": [
+          "username",
+          "role"
+        ],
         "properties": {
-          "username": { "type": "string", "minLength": 1, "maxLength": 100 },
-          "role": { "type": "string", "minLength": 1, "maxLength": 50 }
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
         }
       }
     },
     "data_handling": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["synthetic_data_only", "evidence_retention_days", "redaction_policy"],
+      "required": [
+        "synthetic_data_only",
+        "evidence_retention_days",
+        "redaction_policy"
+      ],
       "properties": {
         "synthetic_data_only": {
           "const": true,
           "description": "A scope cannot authorize work against real data."
         },
-        "evidence_retention_days": { "type": "integer", "minimum": 1, "maximum": 90 },
-        "redaction_policy": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "evidence_retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90
+        },
+        "redaction_policy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
       }
     },
     "stop": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["contacts", "procedure"],
+      "required": [
+        "contacts",
+        "procedure"
+      ],
       "properties": {
         "contacts": {
           "type": "array",
@@ -214,14 +344,29 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "method"],
+            "required": [
+              "name",
+              "method"
+            ],
             "properties": {
-              "name": { "type": "string", "minLength": 1, "maxLength": 200 },
-              "method": { "type": "string", "minLength": 1, "maxLength": 200 }
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "method": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
             }
           }
         },
-        "procedure": { "type": "string", "minLength": 10, "maxLength": 500 }
+        "procedure": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500
+        }
       }
     }
   },
@@ -258,8 +403,8 @@
     "lab_url": {
       "type": "string",
       "maxLength": 500,
-      "description": "http or https against a lab hostname or private address, with an optional port and path.",
-      "pattern": "^https?://(localhost|([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+(test|example|invalid)|10\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|172\\.(1[6-9]|2[0-9]|3[01])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|192\\.168\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|127\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))(:[1-9][0-9]{0,4})?(/[^\\s?#]*)?$"
+      "description": "Scheme, host and optional port. The port range is the real one: a five-digit value above 65535 is not a port, and accepting it here would disagree with any client that parses it.",
+      "pattern": "^https?://(localhost|([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+(test|example|invalid)|10\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|172\\.(1[6-9]|2[0-9]|3[01])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|192\\.168\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|127\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))(:([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?(/[^\\s?#]*)?$"
     }
   }
 }
