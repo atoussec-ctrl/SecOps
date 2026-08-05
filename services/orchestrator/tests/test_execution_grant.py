@@ -51,6 +51,15 @@ def a_grant(**overrides):
     return issue_grant(**arguments)
 
 
+def accept(grant, *, cache=None, at=None, **overrides):
+    """Verify and commit, which is what a caller actually does."""
+    cache = cache if cache is not None else ReplayCache()
+    now = at or AT + timedelta(seconds=10)
+    nonce = verify(grant, cache=cache, at=now, **overrides)
+    cache.consume(nonce, now)
+    return nonce
+
+
 def verify(grant, *, cache=None, at=None, **overrides):
     arguments = {
         "trusted_keys": TRUSTED,
@@ -192,15 +201,28 @@ class Window(unittest.TestCase):
 
 class Replay(unittest.TestCase):
     def test_a_grant_is_single_use(self) -> None:
+        # Single use is a property of acceptance, not of verification.
+        # Verification has no side effect on purpose, so a grant that is checked
+        # and then not accepted stays presentable.
+        cache = ReplayCache()
+        grant = a_grant()
+
+        accept(grant, cache=cache)
+
+        with self.assertRaises(GrantRefused) as raised:
+            accept(grant, cache=cache)
+
+        self.assertIn("already been used", raised.exception.reason)
+
+    def test_verification_alone_does_not_consume_the_nonce(self) -> None:
         cache = ReplayCache()
         grant = a_grant()
 
         verify(grant, cache=cache)
+        verify(grant, cache=cache)
 
-        with self.assertRaises(GrantRefused) as raised:
-            verify(grant, cache=cache)
-
-        self.assertIn("already been used", raised.exception.reason)
+        self.assertEqual(len(cache), 0)
+        accept(grant, cache=cache)
 
     def test_the_cache_outlives_every_moment_a_grant_is_acceptable(self) -> None:
         # The invariant from ADR-012, stated as arithmetic rather than trusted
@@ -223,10 +245,10 @@ class Replay(unittest.TestCase):
         grant = a_grant(lifetime_seconds=MAXIMUM_LIFETIME_SECONDS)
         last = AT + timedelta(seconds=MAXIMUM_LIFETIME_SECONDS + CLOCK_SKEW_SECONDS)
 
-        verify(grant, cache=cache, at=AT - timedelta(seconds=CLOCK_SKEW_SECONDS))
+        accept(grant, cache=cache, at=AT - timedelta(seconds=CLOCK_SKEW_SECONDS))
 
         with self.assertRaises(GrantRefused) as raised:
-            verify(grant, cache=cache, at=last)
+            accept(grant, cache=cache, at=last)
 
         self.assertIn("already been used", raised.exception.reason)
 
