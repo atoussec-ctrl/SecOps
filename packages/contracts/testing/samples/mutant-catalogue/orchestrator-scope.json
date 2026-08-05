@@ -367,6 +367,78 @@
       "property": "a lifecycle that loaded nothing is refused rather than permitting nothing",
       "find": "    if not lifecycle.get(\"transitions\") or not lifecycle.get(\"states\"):",
       "replace": "    if False:"
+    },
+    {
+      "file": "runs/state_machine.py",
+      "property": "a run carrying a state the lifecycle does not declare is refused at construction",
+      "find": "        if self.state not in declared:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a scope that declares no budgets is refused rather than defaulted",
+      "find": "    if not isinstance(declared, Mapping):",
+      "replace": "    if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a budget that is not a positive integer is refused",
+      "find": "        if not isinstance(value, int) or isinstance(value, bool) or value < 1:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a run that exhausted one budget cannot continue on any of them",
+      "find": "        if self._spent:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "wall time is spent while a run is paused",
+      "find": "        if elapsed > self.limits[\"max_duration_seconds\"]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "requests are paid for before they are issued",
+      "find": "        if self._requests_this_second >= self.limits[\"max_requests_per_second\"]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a concurrency slot is taken before an adapter starts",
+      "find": "        if self._in_flight >= self.limits[\"max_concurrency\"]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a double release cannot manufacture concurrency the scope never granted",
+      "find": "        self._in_flight = max(0, self._in_flight - 1)",
+      "replace": "        self._in_flight -= 1"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "response bytes are bounded as they arrive",
+      "find": "        if self._bytes > self.limits[\"max_response_bytes\"]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "a negative byte count cannot buy budget back",
+      "find": "        if count < 0:\n            raise BudgetExceeded(f\"a negative byte count is not a measurement: {count}\")",
+      "replace": "        if False:\n            raise BudgetExceeded(f\"a negative byte count is not a measurement: {count}\")"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "test records are bounded",
+      "find": "        if self._records > self.limits[\"max_test_records\"]:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "runs/budgets.py",
+      "property": "remaining time is never reported as negative",
+      "find": "        return max(0, int((deadline - now).total_seconds()))",
+      "replace": "        return int((deadline - now).total_seconds())"
     }
   ]
 }
