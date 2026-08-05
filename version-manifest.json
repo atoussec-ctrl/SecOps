@@ -67,17 +67,19 @@
       "category": "runtime",
       "purpose": "Orchestrator and Finding Hub runtime.",
       "requiredFromPhase": 1,
-      "status": "unselected",
-      "blockedBy": "E1-001",
-      "reason": "Not installed on the development workstation. The `python` entry currently on PATH is a Microsoft Store stub that reports no version and must not be accepted."
+      "status": "pinned",
+      "version": "3.12.10",
+      "verifiedOn": "2026-08-04",
+      "note": "Installed and verified with `python3 --version`, which the earlier Microsoft Store stub could not answer. The orchestrator suite runs on it through `node tools/repo.mjs check:orchestrator`."
     },
     "pythonPackageManager": {
       "category": "package-manager",
       "purpose": "Python dependency resolution and hashed lock format.",
       "requiredFromPhase": 1,
-      "status": "unselected",
-      "blockedBy": "E1-001",
-      "reason": "Selected together with the Python runtime because the lock format must support per-artifact hashes (docs/05-devsecops/04-static-supply-chain.md). Choice may warrant a short ADR."
+      "status": "pinned",
+      "version": "25.0.1",
+      "verifiedOn": "2026-08-04",
+      "note": "Ships with the pinned Python. It supports the hashed requirements format docs/05-devsecops/04-static-supply-chain.md requires. Nothing is installed through it yet: the orchestrator is standard library only, so its lock file has no entries to hash."
     },
     "postgresql": {
       "category": "service",
@@ -224,6 +226,14 @@
       "commitSha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
       "verifiedOn": "2026-08-04",
       "note": "Latest release at pinning time. The SHA is the commit the v7.0.1 tag ref resolves to, read from the action repository rather than transcribed from a tag in a workflow file."
+    },
+    "actionsSetupPython": {
+      "status": "pinned",
+      "repository": "actions/setup-python",
+      "release": "v7.0.0",
+      "commitSha": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+      "verifiedOn": "2026-08-04",
+      "note": "Installs the pinned Python on the runner so the orchestrator suite runs in CI. Its python-version input must equal the pinned python entry, which the workflow policy asserts."
     },
     "actionsSetupNode": {
       "status": "pinned",

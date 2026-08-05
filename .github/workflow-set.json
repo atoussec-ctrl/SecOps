@@ -32,6 +32,14 @@
               }
             },
             {
+              "name": "Set up the pinned Python runtime",
+              "kind": "action",
+              "action_ref": "actionsSetupPython",
+              "with": {
+                "python-version": "3.12.10"
+              }
+            },
+            {
               "name": "Validate documentation",
               "kind": "run",
               "command": "node tools/repo.mjs check:docs"
@@ -60,6 +68,11 @@
               "name": "Run the foundation suite",
               "kind": "run",
               "command": "node tools/repo.mjs check:foundation"
+            },
+            {
+              "name": "Run the orchestrator suite",
+              "kind": "run",
+              "command": "node tools/repo.mjs check:orchestrator"
             }
           ]
         }
