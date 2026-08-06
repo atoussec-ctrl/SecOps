@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/security/adapter-registry.schema.json",
+  "title": "Adapter Registry",
+  "description": "Every tool the orchestrator may invoke, and exactly how (backlog E1-007). 02-container-component.md requires the registry to map a fixed adapter ID to an immutable container digest and a typed command, and to declare the passive/active classification. 04-orchestrator-spec.md adds a fixed entrypoint, a typed argument array and no user input through a shell. All of that is shape here rather than policy: an adapter that wanted a shell string, an unpinned image or a destructive classification has no way to be written down.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registry_version",
+    "adapters"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "adapters": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/adapter"
+      }
+    }
+  },
+  "$defs": {
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "kind",
+        "profile",
+        "entrypoint",
+        "arguments",
+        "artifacts",
+        "description"
+      ],
+      "properties": {
+        "adapter_id": {
+          "type": "string",
+          "pattern": "^adapter\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$",
+          "description": "Fixed and namespaced. A run names an adapter by this and never by a path or a command, so there is nothing to substitute."
+        },
+        "kind": {
+          "enum": [
+            "container",
+            "synthetic"
+          ],
+          "description": "A container adapter runs a pinned image. A synthetic one runs in process and reaches no network at all, which is what makes it usable before any image digest is pinned."
+        },
+        "image_ref": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Identifier of a version-manifest image entry. Images are never written here, so an adapter cannot pin an unreviewed one. Required for a container adapter and forbidden for a synthetic one, which the tests enforce because JSON Schema alone cannot say it here."
+        },
+        "profile": {
+          "enum": [
+            "passive",
+            "bounded-active"
+          ],
+          "description": "The same two values the scope record and the grant allow. Destructive tooling has no representation in any of the three."
+        },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9._/-]+$",
+          "description": "One executable, no arguments and no shell metacharacters. A space here would be the beginning of a command line."
+        },
+        "arguments": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/$defs/argument"
+          },
+          "description": "A typed vector, never a string. There is no representation for a command line, so there is nothing for a shell to re-parse."
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "sarif",
+              "json-findings",
+              "sbom",
+              "har",
+              "screenshot",
+              "log"
+            ]
+          },
+          "description": "What this adapter can produce. An adapter that declares no artifact produces nothing anyone can ingest."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 15,
+          "maxLength": 300
+        }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "literal",
+            "target",
+            "output-path",
+            "budget"
+          ],
+          "description": "A literal is fixed at registration. The other three are filled by the orchestrator from the pinned target, the output volume and the approved budgets. There is no free-text kind, so an operator cannot supply an argument at all."
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\s;&|`$<>(){}\\\\\"']*$",
+          "description": "No whitespace and no shell metacharacter. The argument vector is passed without a shell, so these could not be interpreted; refusing them anyway means a registry entry cannot be misread by a human either."
+        }
+      }
+    }
+  }
+}

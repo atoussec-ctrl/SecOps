@@ -1,0 +1,69 @@
+{
+  "registry_version": "1.0.0",
+  "adapters": [
+    {
+      "adapter_id": "adapter.synthetic.fixture",
+      "kind": "synthetic",
+      "profile": "passive",
+      "entrypoint": "orchestrator.adapters.synthetic",
+      "arguments": [
+        {
+          "kind": "literal",
+          "value": "--fixture"
+        },
+        {
+          "kind": "literal",
+          "value": "deterministic"
+        },
+        {
+          "kind": "target",
+          "value": "--target"
+        },
+        {
+          "kind": "output-path",
+          "value": "--out"
+        }
+      ],
+      "artifacts": [
+        "sarif",
+        "log"
+      ],
+      "description": "Deterministic fixture adapter. Reaches no network and produces the same findings for the same target, so the run plane can be exercised end to end before any image is pinned."
+    },
+    {
+      "adapter_id": "adapter.zap.baseline",
+      "kind": "container",
+      "image_ref": "zapImage",
+      "profile": "passive",
+      "entrypoint": "/zap/zap-baseline.py",
+      "arguments": [
+        {
+          "kind": "literal",
+          "value": "-t"
+        },
+        {
+          "kind": "target",
+          "value": "--target-url"
+        },
+        {
+          "kind": "literal",
+          "value": "-J"
+        },
+        {
+          "kind": "output-path",
+          "value": "--report"
+        },
+        {
+          "kind": "budget",
+          "value": "--max-duration"
+        }
+      ],
+      "artifacts": [
+        "sarif",
+        "json-findings",
+        "log"
+      ],
+      "description": "ZAP passive baseline scan. Observes traffic and artifacts without attack payloads, which is what makes it a passive profile."
+    }
+  ]
+}
