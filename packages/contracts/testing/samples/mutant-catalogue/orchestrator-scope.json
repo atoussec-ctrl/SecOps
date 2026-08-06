@@ -589,6 +589,18 @@
       "property": "both the switch and the heartbeat are consulted before a run continues",
       "find": "        self.monitor.assert_alive(run_id, now)",
       "replace": "        pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "runs that reached a terminal state stop being tracked",
+      "find": "        self._reap()",
+      "replace": "        pass"
+    },
+    {
+      "file": "runs/supervisor.py",
+      "property": "a run still tearing down is not dropped from the registry",
+      "find": "            run_id for run_id, run in self.runs.items() if run.finished",
+      "replace": "            run_id for run_id, run in self.runs.items()"
     }
   ]
 }

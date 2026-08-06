@@ -161,6 +161,11 @@ class Run:
         self.advance(target, satisfied=satisfied)
 
     @property
+    def finished(self) -> bool:
+        """Whether this run has reached a terminal state and is over."""
+        return self.state in self._terminal
+
+    @property
     def succeeded(self) -> bool:
         """True only for `completed`.
 
