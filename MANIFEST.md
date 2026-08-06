@@ -12,7 +12,7 @@
   E1-002 DNS pinning and E1-004 execution grants implemented; E1-003, E1-010
   and E1-013 contracts complete, runtimes pending
 - Bootstrap command: `node tools/repo.mjs check:all`
-- Verification: 9 checks, 317 Node tests, 198 Python tests, 98/98 mutants killed
+- Verification: 9 checks, 326 Node tests, 219 Python tests, 112/112 mutants killed
 
 ## Sections
 
@@ -56,6 +56,7 @@
 | `services/orchestrator/grants` | Execution grant issuance, verification and replay cache (E1-004) |
 | `services/orchestrator/audit` | Tamper-evident audit chain and fail-closed decision recording (E1-005) |
 | `services/orchestrator/runs` | Run state machine, idempotency, budgets, kill switch and heartbeat (E1-005, E1-006) |
+| `services/orchestrator/adapters` | Typed adapter registry and invocation builder (E1-007) |
 | `packages/contracts/testing` | Mutant catalogue the mutation check measures against |
 | `tests` | Foundation acceptance suite and capstone assertions |
 

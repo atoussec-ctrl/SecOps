@@ -61,11 +61,11 @@ runtime services are not yet built.
 | Markdown documents | 109 (68 under `docs/`) |
 | Architecture decision records | 11 accepted and 2 proposed, plus an index |
 | Reusable templates | 8 |
-| JSON Schema contracts | 14 |
+| JSON Schema contracts | 15 |
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
-| Foundation test suites | 22 |
-| Tests | 317 Node, 198 Python, all passing |
+| Foundation test suites | 23 |
+| Tests | 326 Node, 219 Python, all passing |
 
 ### Built and verified
 
@@ -108,6 +108,7 @@ something to be tested against rather than a paragraph to interpret.
 | E1-004 Execution grants and replay protection | contract, verifier, replay cache, differential suite, ADR-012 | ADR-012 acceptance; audit wiring |
 | E1-005 Run plane | **complete** — audit chain, fail-closed recording, idempotency, run state machine, budgets charged on issue | wiring budgets to adapter invocation (E1-007) |
 | E1-006 Global kill and heartbeat | **complete** — kill switch that refuses rather than returning a boolean, latched heartbeat staleness, a sweep that stops, records and forgets | — |
+| E1-007 Adapter registry | typed registry, argument vectors with no command string, synthetic adapter | container execution, once an image is pinned |
 | E1-010 Canonical finding model | occurrence, finding and lifecycle contracts | ingestion, fingerprinting, workflow engine |
 | E1-013 Domain event contracts | envelope, catalog of 14 events | outbox, relay, delivery records, poison queue |
 
@@ -276,7 +277,7 @@ why every check here distinguishes *pending* from *passed*.
 │   └── terraform/                Optional infrastructure definitions
 │
 └── tests/
-    ├── foundation/               22 acceptance suites, 317 tests
+    ├── foundation/               23 acceptance suites, 326 tests
     └── capstone/                 End-to-end engagement assertions
 ```
 
@@ -511,7 +512,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 98/98 across the Scope Guard, grant, audit and run modules.
+  **Enforced** by `check:mutation`, currently 112/112 across the Scope Guard, grant, audit, run and adapter modules.
 
 ### Mutation testing, and why it is a catalogue
 

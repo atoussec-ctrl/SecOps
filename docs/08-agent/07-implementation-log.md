@@ -4,6 +4,78 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## E1-007 — Typed adapter registry
+
+Status: **implemented**. Depends on: E1-005. Phase 1.
+
+### There is no command string anywhere
+
+`04-orchestrator-spec.md` asks for a fixed entrypoint, a typed argument array
+and no user input through a shell. That is shape here rather than policy: the
+contract has no field that holds a command line, and `build_invocation` is the
+only function that produces an argument vector.
+
+It takes a pinned target, an output path and approved budgets — **not a
+command**. A caller has nothing to concatenate because no parameter would let
+it.
+
+Argument kinds are `literal`, `target`, `output-path` and `budget`. There is no
+free-text kind, so an operator cannot supply an argument at all: every
+substitution comes from something already authorised elsewhere — the target from
+the addresses E1-002 pinned, the budget from the signed scope.
+
+### Three refusals a caller could otherwise reach by accident
+
+- an adapter that is not registered, so a run cannot name a tool nobody
+  reviewed;
+- a target outside the pinned addresses, so an invocation cannot reach somewhere
+  the resolution never authorised;
+- a profile the scope did not allow, so a bounded-active adapter cannot run
+  under a passive authorisation.
+
+### The synthetic adapter exists because nothing is pinned
+
+Every image in this repository is still unselected, so a container adapter
+cannot run. A synthetic adapter has no image, runs in process and reaches no
+network, which makes the run plane exercisable end to end today rather than
+after E1-015.
+
+That distinction is a rule the schema cannot state on its own — "required here,
+forbidden there" needs conditional keywords the validator does not implement —
+so it lives in the loader with a test on each side.
+
+### Vocabularies that must not drift
+
+Three documents now decide what an adapter may do: the scope record, the grant
+and the registry. A profile permitted by only two of them would be a way around
+the third, so a test asserts all three enums are equal rather than similar.
+
+`zapImage` was added to the version manifest as **unselected**, blocked by
+E1-015. The registry names a manifest entry rather than an image, so an adapter
+cannot pin an unreviewed one, and a test requires every named entry to exist and
+to carry a blocking task while it is unpinned.
+
+### Six catalogue anchors written with the wrong indentation
+
+The mutation check reported them rather than running against unmutated code,
+which is the fail-closed behaviour it was built for. They were then regenerated
+**from the source file** instead of retyped, which removes the class of mistake
+rather than the instance.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 326 Node tests, 219 Python tests,
+112/112 mutants killed, exit 0. Fourteen mutants added.
+
+### Known limitations and remaining risk
+
+- **Nothing executes an invocation.** Producing the vector and running it are
+  separate on purpose, and the runner belongs with the container lifecycle.
+- The synthetic adapter is registered but has no implementation yet; the
+  registry describes it and nothing runs it.
+- The registry is not yet wired to the supervisor, so budgets and the kill
+  switch are not consulted on an invocation path that does not exist.
+
 ## Revision — the sweep moved a leak instead of closing it
 
 ### Defect fixed
