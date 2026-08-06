@@ -108,6 +108,65 @@ class Sweeping(unittest.TestCase):
         )
 
 
+class TheRegistryIsBounded(unittest.TestCase):
+    """The first version cleared the monitor and kept every Run object, which
+    moved the leak rather than closing it."""
+
+    def test_a_run_that_ended_normally_is_reaped(self) -> None:
+        supervisor = a_supervisor()
+        run = a_running_run("run.0001")
+        supervisor.watch(run, AT)
+
+        for step in ("finalizing", "completed"):
+            run.advance(step, satisfied=EVERYTHING)
+
+        supervisor.sweep(AT + timedelta(seconds=5))
+
+        self.assertEqual(supervisor.tracked(), 0)
+        self.assertEqual(supervisor.watching(), {})
+
+    def test_a_swept_run_is_held_until_teardown_finishes(self) -> None:
+        # A swept run sits in `cancelling`, which is not terminal: teardown has
+        # not happened yet, and dropping it there would lose the thing that
+        # still has work to do.
+        supervisor = a_supervisor()
+        run = a_running_run("run.0001")
+        supervisor.watch(run, AT)
+
+        supervisor.sweep(LATE)
+
+        self.assertEqual(run.state, "cancelling")
+        self.assertEqual(supervisor.tracked(), 1)
+
+        run.advance("cancelled", satisfied=EVERYTHING)
+        supervisor.sweep(LATE + timedelta(seconds=1))
+
+        self.assertEqual(supervisor.tracked(), 0)
+
+    def test_many_finished_runs_do_not_accumulate(self) -> None:
+        supervisor = a_supervisor()
+
+        for index in range(200):
+            run = a_running_run(f"run.{index:04d}")
+            supervisor.watch(run, AT)
+            for step in ("finalizing", "completed"):
+                run.advance(step, satisfied=EVERYTHING)
+
+        supervisor.sweep(AT + timedelta(seconds=5))
+
+        self.assertEqual(supervisor.tracked(), 0)
+
+    def test_a_live_run_is_not_reaped(self) -> None:
+        supervisor = a_supervisor()
+        run = a_running_run("run.0001")
+        supervisor.watch(run, AT)
+
+        supervisor.sweep(AT + timedelta(seconds=5))
+
+        self.assertEqual(supervisor.tracked(), 1)
+        self.assertEqual(run.state, "running")
+
+
 class OneBrokenRunDoesNotStopTheSweep(unittest.TestCase):
     def test_a_run_that_cannot_move_is_reported_and_the_rest_still_stop(self) -> None:
         # A sweep that gave up half-way would leave exactly the runs it had not

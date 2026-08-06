@@ -4,6 +4,49 @@ One entry per completed backlog task, recording the evidence required by
 [`01-operating-manual.md`](01-operating-manual.md), "Quality evidence in
 handoff". Do not record a check that was not run.
 
+## Revision — the sweep moved a leak instead of closing it
+
+### Defect fixed
+
+The previous entry claimed the sweep closed the monitor leak. It closed half of
+it:
+
+```
+monitor watching after sweep : 0
+supervisor.runs after sweep  : 200
+```
+
+The monitor was cleared and every `Run` object was kept. The registry that
+replaced the leaking dictionary leaked in exactly the same way.
+
+Every sweep now reaps runs that reached a terminal state — however they got
+there. Reaping only what the sweep itself stopped would have left the registry
+growing for the common case, which is a run that finishes normally.
+
+### What is deliberately still held
+
+A swept run sits in `cancelling`, which is **not** terminal: teardown has not
+happened, and dropping it there would lose the thing that still has work to do.
+It is reaped when it reaches `cancelled`. Both halves are tested, because the
+difference between "still tearing down" and "leaked" is the whole question.
+
+### The third leak of one shape
+
+Idempotency store, heartbeat monitor, supervisor registry. Three modules, one
+pattern: **a collection that grows on the way in and has no rule for the way
+out.**
+
+The same worth naming as the time-of-check pattern, and for the same reason —
+predictable enough to look for on purpose. Every store in this service now
+either has a derived retention bound or a defined reaping rule, and the ones
+with a bound assert it at construction.
+
+### Verification
+
+`node tools/repo.mjs check:all` — 9 checks, 317 Node tests, 198 Python tests,
+98/98 mutants killed, exit 0. Two mutants added, one for the reaping and one for
+the terminal-only condition, so dropping a run mid-teardown fails too.
+
 ## E1-006 — The sweep, and the asymmetry it turns on
 
 Status: **complete**. Depends on: E1-005. Phase 1.

@@ -24,6 +24,12 @@ audit store is broken **and** the dangerous work has already ended.
 The monitor grows for as long as runs are registered and never forgotten. That
 leak belongs here rather than in the monitor: whoever kills a stale run is who
 knows it has ended.
+
+The same applies to the supervisor's own registry, and the first version got it
+wrong: it cleared the monitor and kept every `Run` object, which moved the leak
+rather than closing it. A run that reached a terminal state is over however it
+got there — swept, cancelled or completed normally — so every sweep reaps them
+all, not only the ones it stopped itself.
 """
 
 from __future__ import annotations
@@ -101,7 +107,19 @@ class Supervisor:
 
             self.monitor.forget(run_id)
 
+        # Runs that ended without the sweep's help are dropped here too. Most
+        # runs finish normally, so reaping only what this sweep stopped would
+        # leave the registry growing for the common case.
+        self._reap()
+
         return SweepReport(tuple(stopped), tuple(unrecorded), tuple(unstoppable))
+
+    def _reap(self) -> None:
+        for run_id in [
+            run_id for run_id, run in self.runs.items() if run.finished
+        ]:
+            del self.runs[run_id]
+            self.monitor.forget(run_id)
 
     def _stop(self, run_id: str, *, reason: str, now: datetime) -> None:
         # The switch first, so a run stopped here is refused by every other
@@ -149,3 +167,7 @@ class Supervisor:
 
     def watching(self) -> Mapping[str, datetime]:
         return self.monitor.watching()
+
+    def tracked(self) -> int:
+        """How many runs the supervisor still holds. Bounded by design."""
+        return len(self.runs)
