@@ -65,7 +65,7 @@ runtime services are not yet built.
 | Verification modules (`tools/`) | 9 |
 | Repository checks | 9 |
 | Foundation test suites | 23 |
-| Tests | 326 Node, 219 Python, all passing |
+| Tests | 326 Node, 223 Python, all passing |
 
 ### Built and verified
 
@@ -512,7 +512,7 @@ Done, which requires the evidence — not the intention — to exist.
   application code.
 - **Mutation**: at least 80% for security-critical modules
   ([`06-testing/02-tdd-coverage-mutation.md`](docs/06-testing/02-tdd-coverage-mutation.md)).
-  **Enforced** by `check:mutation`, currently 112/112 across the Scope Guard, grant, audit, run and adapter modules.
+  **Enforced** by `check:mutation`, currently 113/113 across the Scope Guard, grant, audit, run and adapter modules.
 
 ### Mutation testing, and why it is a catalogue
 

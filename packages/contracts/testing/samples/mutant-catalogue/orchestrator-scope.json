@@ -665,13 +665,13 @@
     {
       "file": "adapters/registry.py",
       "property": "an adapter outside the scope's allowed profiles cannot be invoked",
-      "find": "    if adapter.profile not in allowed_profiles:",
+      "find": "    if adapter.profile not in permitted_profiles:",
       "replace": "    if False:"
     },
     {
       "file": "adapters/registry.py",
       "property": "a target outside the pinned addresses cannot be invoked",
-      "find": "    if target not in pinned_addresses:",
+      "find": "    if target not in permitted_addresses:",
       "replace": "    if False:"
     },
     {
@@ -685,6 +685,12 @@
       "property": "a budget argument without an approved budget is refused",
       "find": "            if \"max_duration_seconds\" not in budgets:",
       "replace": "            if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a bare string is refused where a sequence is meant, so a fragment cannot match a pin",
+      "find": "    if isinstance(values, str):",
+      "replace": "    if False:"
     }
   ]
 }

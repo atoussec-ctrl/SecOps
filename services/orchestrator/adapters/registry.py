@@ -65,6 +65,24 @@ _ARGUMENT_KINDS: Final = frozenset({"literal", "target", "output-path", "budget"
 _PROFILES: Final = frozenset({"passive", "bounded-active"})
 
 
+def _as_membership_set(values: Sequence[str], label: str) -> frozenset[str]:
+    """Refuse a bare string where a sequence of values is meant.
+
+    ``str`` satisfies ``Sequence[str]``, so the annotation does not catch it,
+    and ``in`` on a string is substring containment rather than membership. A
+    caller passing one pinned address as a string turned the pin check into a
+    fragment match: the target ``56.1`` was authorised against a pin of
+    ``192.168.56.10``.
+    """
+    if isinstance(values, str):
+        raise AdapterRefused(
+            f"{label} must be a sequence of values, not a single string; "
+            "membership on a string matches fragments",
+        )
+
+    return frozenset(values)
+
+
 class AdapterRefused(Exception):
     """An adapter may not be invoked. The reason is meant to reach an audit record."""
 
@@ -208,6 +226,9 @@ def build_invocation(
     the addresses resolution pinned, the budgets from the signed scope. Nothing
     a caller supplies is concatenated into a string.
     """
+    permitted_profiles = _as_membership_set(allowed_profiles, "allowed_profiles")
+    permitted_addresses = _as_membership_set(pinned_addresses, "pinned_addresses")
+
     adapter = registry.get(adapter_id)
 
     if adapter is None:
@@ -216,18 +237,18 @@ def build_invocation(
             "nobody reviewed",
         )
 
-    if adapter.profile not in allowed_profiles:
+    if adapter.profile not in permitted_profiles:
         raise AdapterRefused(
             f"{adapter_id} is {adapter.profile} and the scope allows "
-            f"{', '.join(allowed_profiles)}",
+            f"{', '.join(sorted(permitted_profiles))}",
         )
 
-    if target not in pinned_addresses:
+    if target not in permitted_addresses:
         # The address was resolved and pinned by E1-002. Anything else reaches
         # somewhere the resolution never authorised.
         raise AdapterRefused(
             f"{target} is not among the addresses pinned for this run "
-            f"({', '.join(pinned_addresses)})",
+            f"({', '.join(sorted(permitted_addresses))})",
         )
 
     for value in (target, output_path):

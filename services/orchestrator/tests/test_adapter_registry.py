@@ -244,5 +244,36 @@ class RefusedInvocations(unittest.TestCase):
         self.assertIn("none was approved", raised.exception.reason)
 
 
+class MembershipIsNotSubstringMatching(unittest.TestCase):
+    """str satisfies Sequence[str], and `in` on a string matches fragments.
+
+    Passing one pinned address as a string turned the pin check into a fragment
+    match: the target 56.1 was authorised against a pin of 192.168.56.10.
+    """
+
+    def test_a_bare_string_of_pinned_addresses_is_refused(self) -> None:
+        with self.assertRaises(AdapterRefused) as raised:
+            invoke(target="56.1", pinned_addresses="192.168.56.10")
+
+        self.assertIn("not a single string", raised.exception.reason)
+
+    def test_a_bare_string_of_allowed_profiles_is_refused(self) -> None:
+        with self.assertRaises(AdapterRefused) as raised:
+            invoke(allowed_profiles="passive")
+
+        self.assertIn("not a single string", raised.exception.reason)
+
+    def test_a_fragment_of_a_pinned_address_is_never_authorised(self) -> None:
+        for fragment in ("56.1", "192.168", "0.10", "1"):
+            with self.subTest(fragment=fragment), self.assertRaises(AdapterRefused):
+                invoke(target=fragment, pinned_addresses=["192.168.56.10"])
+
+    def test_a_proper_sequence_still_works(self) -> None:
+        for pinned in (["192.168.56.10"], ("192.168.56.10",), {"192.168.56.10"}):
+            with self.subTest(pinned=type(pinned).__name__):
+                invocation = invoke(target="192.168.56.10", pinned_addresses=pinned)
+                self.assertIn("192.168.56.10", invocation.argv)
+
+
 if __name__ == "__main__":
     unittest.main()

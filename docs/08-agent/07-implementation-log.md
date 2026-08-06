@@ -67,6 +67,21 @@ rather than the instance.
 `node tools/repo.mjs check:all` — 9 checks, 326 Node tests, 219 Python tests,
 112/112 mutants killed, exit 0. Fourteen mutants added.
 
+### A defect found while reviewing this task
+
+`build_invocation` took `pinned_addresses: Sequence[str]`, and **`str` satisfies
+`Sequence[str]`**. Membership on a string is substring containment, so a caller
+passing one pinned address as a string turned the pin check into a fragment
+match: the target `56.1` was authorised against a pin of `192.168.56.10`.
+
+The same applied to `allowed_profiles`. Both now refuse a bare string and
+compare against a set built from an explicit sequence, and a test walks four
+fragments of a pinned address to show none is accepted.
+
+The annotation was correct and useless. That is worth remembering: a type hint
+names a shape and `str` genuinely is a sequence of strings, so the check that
+looked right answered a different question.
+
 ### Known limitations and remaining risk
 
 - **Nothing executes an invocation.** Producing the vector and running it are
