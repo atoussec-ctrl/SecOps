@@ -601,6 +601,90 @@
       "property": "a run still tearing down is not dropped from the registry",
       "find": "            run_id for run_id, run in self.runs.items() if run.finished",
       "replace": "            run_id for run_id, run in self.runs.items()"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an adapter declaring a destructive profile is refused",
+      "find": "    if entry[\"profile\"] not in _PROFILES:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an entrypoint containing a shell metacharacter is refused",
+      "find": "    if _SHELL_METACHARACTER.search(str(entry[\"entrypoint\"])):",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an argument containing a shell metacharacter is refused",
+      "find": "        if _SHELL_METACHARACTER.search(str(argument[\"value\"])):",
+      "replace": "        if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a container adapter without an image reference is refused",
+      "find": "    if kind == \"container\" and not isinstance(image_ref, str):",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a synthetic adapter naming an image is refused",
+      "find": "    if kind == \"synthetic\" and image_ref is not None:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an adapter declaring no artifact is refused",
+      "find": "    if not isinstance(artifacts, list) or not artifacts:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an argument of an unknown kind is refused",
+      "find": "        if argument[\"kind\"] not in _ARGUMENT_KINDS:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a duplicate adapter identifier is refused",
+      "find": "        if adapter.adapter_id in adapters:",
+      "replace": "        if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an empty registry is refused rather than permitting nothing",
+      "find": "    if not document.get(\"adapters\"):",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an unregistered adapter cannot be invoked",
+      "find": "    if adapter is None:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "an adapter outside the scope's allowed profiles cannot be invoked",
+      "find": "    if adapter.profile not in allowed_profiles:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a target outside the pinned addresses cannot be invoked",
+      "find": "    if target not in pinned_addresses:",
+      "replace": "    if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a substitution carrying a metacharacter is refused",
+      "find": "        if _SHELL_METACHARACTER.search(value):",
+      "replace": "        if False:"
+    },
+    {
+      "file": "adapters/registry.py",
+      "property": "a budget argument without an approved budget is refused",
+      "find": "            if \"max_duration_seconds\" not in budgets:",
+      "replace": "            if False:"
     }
   ]
 }
