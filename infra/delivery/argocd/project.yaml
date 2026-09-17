@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: secure-delivery
+  namespace: argocd
+spec:
+  description: Restricted project for GitOps-managed delivery environments.
+  sourceRepos:
+    - https://github.com/atoussec-ctrl/SecOps.git
+  destinations:
+    - namespace: app-dev
+      server: https://kubernetes.default.svc
+    - namespace: app-homol
+      server: https://kubernetes.default.svc
+    - namespace: app-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  orphanedResources:
+    warn: true
