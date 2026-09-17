@@ -1,0 +1,28 @@
+# Cilium 1.20.2 baseline for RKE2 1.36.x.
+# RKE2 is installed with cni:none and disable-kube-proxy:true.
+ipam:
+  mode: kubernetes
+
+kubeProxyReplacement: true
+k8sServiceHost: "127.0.0.1"
+k8sServicePort: "6443"
+
+routingMode: tunnel
+tunnelProtocol: vxlan
+
+defaultLBServiceIPAM: none
+
+operator:
+  replicas: 2
+
+bgpControlPlane:
+  enabled: true
+
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: false
+
+# Keep the first deployment conservative. BGP peers and LB pools are separate
+# objects and are not created until the network team approves them.
