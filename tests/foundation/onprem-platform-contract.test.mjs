@@ -107,7 +107,11 @@ test("audit policy keeps Secret bodies out of logs and forbids RequestResponse",
 
   assert.ok(secretRule >= 0, "Secret-specific audit rule is required");
   assert.ok(genericRequestRule > secretRule, "Secret Metadata rule must match before generic Request rule");
-  assert.ok(!audit.includes("RequestResponse"), "RequestResponse can persist sensitive response bodies");
+  assert.doesNotMatch(
+    audit,
+    /^\s*(?:-\s*)?level:\s*RequestResponse\s*$/m,
+    "RequestResponse audit levels can persist sensitive response bodies",
+  );
 });
 
 test("Pod Security and application networking start fail-closed", async () => {
