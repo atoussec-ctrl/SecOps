@@ -39,6 +39,8 @@ jobs:
         run: node tools/repo.mjs check:exposure
       - name: Assert workflow policy
         run: node tools/repo.mjs check:workflows
+      - name: Validate secure delivery policies
+        run: python tests/pipeline/selftest.py
       - name: Run the foundation suite
         run: node tools/repo.mjs check:foundation
       - name: Run the orchestrator suite
