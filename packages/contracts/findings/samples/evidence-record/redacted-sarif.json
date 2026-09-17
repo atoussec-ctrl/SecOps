@@ -1,0 +1,17 @@
+{
+  "evidence_version": "1.0.0",
+  "evidence_id": "EVD-2026-000001",
+  "project_profile_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "source_run_id": "RUN-2026-000001",
+  "media_type": "application/sarif+json",
+  "content_stage": "redacted",
+  "digest": "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+  "size_bytes": 4096,
+  "redaction": {
+    "applied": true,
+    "policy_id": "core-evidence-redaction",
+    "policy_version": "1.0.0",
+    "replacement_count": 3,
+    "raw_secret_values_retained": false
+  }
+}
