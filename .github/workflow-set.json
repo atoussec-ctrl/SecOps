@@ -69,6 +69,11 @@
               "command": "node tools/repo.mjs check:workflows"
             },
             {
+              "name": "Validate secure delivery policies",
+              "kind": "run",
+              "command": "python tests/pipeline/selftest.py"
+            },
+            {
               "name": "Run the foundation suite",
               "kind": "run",
               "command": "node tools/repo.mjs check:foundation"
