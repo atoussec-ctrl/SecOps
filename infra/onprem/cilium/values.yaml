@@ -15,14 +15,13 @@ defaultLBServiceIPAM: none
 operator:
   replicas: 2
 
+# Explicitly disabled until the datacenter network team approves ASN, peers,
+# route filters, ECMP limits, authentication and rollback behavior.
 bgpControlPlane:
-  enabled: true
+  enabled: false
 
 hubble:
   relay:
     enabled: true
   ui:
     enabled: false
-
-# Keep the first deployment conservative. BGP peers and LB pools are separate
-# objects and are not created until the network team approves them.
