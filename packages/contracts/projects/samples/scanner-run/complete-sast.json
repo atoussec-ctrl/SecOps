@@ -1,0 +1,26 @@
+{
+  "run_version": "1.0.0",
+  "run_id": "RUN-2026-000001",
+  "assessment_id": "ASM-2026-0001",
+  "project_profile_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "capability": "sast",
+  "adapter": {
+    "adapter_id": "adapter.semgrep.static",
+    "tool": "semgrep",
+    "tool_version": "example-pinned-version",
+    "artifact_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "timing": {
+    "started_at": "2026-09-17T12:00:00Z",
+    "finished_at": "2026-09-17T12:00:20Z"
+  },
+  "status": "complete",
+  "exit_code": 0,
+  "output": {
+    "format": "sarif",
+    "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "size_bytes": 1024,
+    "findings_count": 0
+  },
+  "errors": []
+}
