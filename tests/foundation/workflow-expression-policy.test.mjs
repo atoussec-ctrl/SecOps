@@ -95,6 +95,24 @@ test("E0-007 duplicate step ids fail closed", () => {
   assert.ok(problems.some((problem) => /duplicate step id "push"/.test(problem)));
 });
 
+test("E0-007 merge queue candidates cannot receive writable release permissions", () => {
+  const value = descriptor();
+  value.workflows.release.triggers = {
+    merge_group: { branches: ["main"] },
+  };
+  const problems = checkWorkflowPolicy(value, manifest);
+  for (const scope of ["packages", "id-token", "attestations"]) {
+    assert.ok(
+      problems.some(
+        (problem) =>
+          problem.includes(`permission "${scope}" is write`) &&
+          problem.includes("pull-request or merge-group workflow"),
+      ),
+      `expected ${scope} write to be refused for merge_group`,
+    );
+  }
+});
+
 test("E0-007 typed expressions render while raw shell interpolation stays absent", () => {
   const rendered = renderWorkflow(
     descriptor().workflows.release,
