@@ -10,7 +10,7 @@
     "dirty": false
   },
   "source": {
-    "project_root": "../example-web",
+    "project_root": ".",
     "access": "read-only",
     "follow_symlinks": false,
     "allow_outside_root": false
