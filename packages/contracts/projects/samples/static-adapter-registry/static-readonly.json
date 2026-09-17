@@ -1,0 +1,19 @@
+{
+  "registry_version": "1.0.0",
+  "adapters": [
+    {
+      "adapter_id": "adapter.project.inventory",
+      "kind": "synthetic",
+      "capability": "inventory",
+      "source_access": "read-only",
+      "network_access": "none",
+      "entrypoint": "builtin.project-inventory",
+      "arguments": [
+        { "kind": "project-root", "value": "--project-root" },
+        { "kind": "output-path", "value": "--output" }
+      ],
+      "artifacts": ["inventory"],
+      "description": "Built-in deterministic project inventory over the authorized read-only source snapshot."
+    }
+  ]
+}

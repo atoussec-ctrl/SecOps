@@ -1,0 +1,62 @@
+{
+  "profile_version": "1.0.0",
+  "project_id": "example-web",
+  "snapshot": {
+    "provider": "github",
+    "owner": "example-org",
+    "repository": "example-web",
+    "commit_sha": "1111111111111111111111111111111111111111",
+    "branch": "main",
+    "dirty": false
+  },
+  "source": {
+    "project_root": ".",
+    "access": "read-only",
+    "follow_symlinks": false,
+    "allow_outside_root": false
+  },
+  "discovery": {
+    "languages": [
+      {
+        "name": "typescript",
+        "version": "5.x",
+        "evidence": ["package.json", "tsconfig.json"]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "evidence": ["package.json"]
+      }
+    ],
+    "package_managers": [
+      {
+        "name": "npm",
+        "evidence": ["package-lock.json"]
+      }
+    ],
+    "build_systems": [
+      {
+        "name": "vite",
+        "evidence": ["package.json", "vite.config.ts"]
+      }
+    ],
+    "test_frameworks": [
+      {
+        "name": "vitest",
+        "evidence": ["package.json"]
+      }
+    ],
+    "ci_systems": [
+      {
+        "name": "github-actions",
+        "evidence": [".github/workflows/ci.yml"]
+      }
+    ],
+    "containers": [],
+    "iac": [],
+    "api_contracts": [],
+    "workspaces": []
+  },
+  "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

@@ -1,0 +1,22 @@
+{
+  "baseline_version": "1.0.0",
+  "baseline_id": "BSL-2026-0001",
+  "project_id": "example-web",
+  "project_profile_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "commit_sha": "0123456789abcdef0123456789abcdef01234567",
+  "policy": {
+    "policy_id": "enterprise-web",
+    "policy_version": "1.0.0"
+  },
+  "created_at": "2026-09-17T15:00:00Z",
+  "findings": [
+    {
+      "fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+      "state": "open"
+    },
+    {
+      "fingerprint": "2222222222222222222222222222222222222222222222222222222222222222",
+      "state": "verified"
+    }
+  ]
+}

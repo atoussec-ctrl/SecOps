@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/findings/evidence-record.schema.json",
+  "title": "Redacted Evidence Record",
+  "description": "Metadata for sanitized evidence after redaction. Raw secret values and raw evidence bytes are not part of this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_version",
+    "evidence_id",
+    "project_profile_digest",
+    "source_run_id",
+    "media_type",
+    "content_stage",
+    "digest",
+    "size_bytes",
+    "redaction"
+  ],
+  "properties": {
+    "evidence_version": { "$ref": "#/$defs/semantic_version" },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^EVD-[0-9]{4}-[0-9]{6}$"
+    },
+    "project_profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_run_id": {
+      "type": "string",
+      "pattern": "^RUN-[0-9]{4}-[0-9]{6}$"
+    },
+    "media_type": {
+      "enum": [
+        "text/plain",
+        "application/json",
+        "application/sarif+json"
+      ]
+    },
+    "content_stage": { "const": "redacted" },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 52428800
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applied",
+        "policy_id",
+        "policy_version",
+        "replacement_count",
+        "raw_secret_values_retained"
+      ],
+      "properties": {
+        "applied": { "const": true },
+        "policy_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,99}$"
+        },
+        "policy_version": { "$ref": "#/$defs/semantic_version" },
+        "replacement_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "raw_secret_values_retained": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "semantic_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    }
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/projects/project-profile.schema.json",
+  "title": "External Project Profile",
+  "description": "Immutable discovery output for a source repository assessed by SecOps. Discovery describes what exists; it does not authorize scanners or execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_version",
+    "project_id",
+    "snapshot",
+    "source",
+    "discovery",
+    "fingerprint"
+  ],
+  "properties": {
+    "profile_version": { "$ref": "#/$defs/semantic_version" },
+    "project_id": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 100,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,99}$"
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "owner", "repository", "commit_sha", "branch", "dirty"],
+      "properties": {
+        "provider": { "enum": ["github"] },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "dirty": {
+          "const": false,
+          "description": "The profile represents an immutable Git snapshot. Uncommitted source is not a reproducible assessment target."
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_root", "access", "follow_symlinks", "allow_outside_root"],
+      "properties": {
+        "project_root": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "access": {
+          "const": "read-only"
+        },
+        "follow_symlinks": {
+          "const": false
+        },
+        "allow_outside_root": {
+          "const": false
+        }
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "languages",
+        "frameworks",
+        "package_managers",
+        "build_systems",
+        "test_frameworks",
+        "ci_systems",
+        "containers",
+        "iac",
+        "api_contracts",
+        "workspaces"
+      ],
+      "properties": {
+        "languages": { "$ref": "#/$defs/component_list" },
+        "frameworks": { "$ref": "#/$defs/component_list" },
+        "package_managers": { "$ref": "#/$defs/component_list" },
+        "build_systems": { "$ref": "#/$defs/component_list" },
+        "test_frameworks": { "$ref": "#/$defs/component_list" },
+        "ci_systems": { "$ref": "#/$defs/component_list" },
+        "containers": { "$ref": "#/$defs/component_list" },
+        "iac": { "$ref": "#/$defs/component_list" },
+        "api_contracts": { "$ref": "#/$defs/component_list" },
+        "workspaces": { "$ref": "#/$defs/component_list" }
+      }
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the canonical project profile."
+    }
+  },
+  "$defs": {
+    "semantic_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "component_list": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "evidence"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        }
+      }
+    }
+  }
+}

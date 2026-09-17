@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/projects/static-adapter-registry.schema.json",
+  "title": "Static External Project Adapter Registry",
+  "description": "Closed registry for static-readonly project analysis. It is intentionally separate from the network-target adapter registry and cannot express targets, active profiles, source writes, network access or operator-supplied command strings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["registry_version", "adapters"],
+  "properties": {
+    "registry_version": { "$ref": "#/$defs/semantic_version" },
+    "adapters": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/adapter" }
+    }
+  },
+  "$defs": {
+    "semantic_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "kind",
+        "capability",
+        "source_access",
+        "network_access",
+        "entrypoint",
+        "arguments",
+        "artifacts",
+        "description"
+      ],
+      "properties": {
+        "adapter_id": {
+          "type": "string",
+          "pattern": "^adapter\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$"
+        },
+        "kind": { "enum": ["container", "synthetic"] },
+        "image_ref": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
+        },
+        "capability": {
+          "enum": ["inventory", "sast", "secrets", "sca", "iac", "workflow", "sbom"]
+        },
+        "source_access": { "const": "read-only" },
+        "network_access": { "const": "none" },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[a-zA-Z0-9._/-]+$"
+        },
+        "arguments": {
+          "type": "array",
+          "maxItems": 40,
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["inventory", "sarif", "json-findings", "cyclonedx", "spdx", "log"]
+          }
+        },
+        "description": {
+          "type": "string",
+          "minLength": 15,
+          "maxLength": 300
+        }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "enum": ["literal", "project-root", "output-path", "rules-path", "advisory-path"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\r\\n\\u0000]*$"
+        }
+      }
+    }
+  }
+}
