@@ -27,15 +27,20 @@
 | Module boundaries | [`03-monorepo-module-boundaries.md`](../02-architecture/03-monorepo-module-boundaries.md) |
 | Data schema | [`02-database-schema.md`](../07-data-api/02-database-schema.md) |
 | Control-plane API | [`03-control-plane-api.md`](../07-data-api/03-control-plane-api.md) |
+| Integration/API map | [`06-integration-api-map.md`](../07-data-api/06-integration-api-map.md) |
 | Finding model | [`05-sarif-finding-model.md`](../07-data-api/05-sarif-finding-model.md) |
 | Threats and mitigations | [`01-threat-model.md`](../04-security/01-threat-model.md) |
 | Safe execution | [`09-tool-safety-guardrails.md`](../04-security/09-tool-safety-guardrails.md) |
-| CI/CD | [`01-cicd-architecture.md`](../05-devsecops/01-cicd-architecture.md) |
+| CI/CD and secure delivery | [`00-index.md`](../05-devsecops/00-index.md) |
+| Authentication/identity | [`11-authentication-and-identity.md`](../05-devsecops/11-authentication-and-identity.md) |
+| Operations/runbooks | [`12-integration-runbook.md`](../05-devsecops/12-integration-runbook.md) |
+| Tool qualification | [`13-tool-qualification-and-testing.md`](../05-devsecops/13-tool-qualification-and-testing.md) |
+| Implementation readiness | [`14-implementation-status.md`](../05-devsecops/14-implementation-status.md) |
 | Testing | [`01-test-strategy.md`](../06-testing/01-test-strategy.md) |
 | Agent behavior | [`01-operating-manual.md`](../08-agent/01-operating-manual.md) |
 | Completed task evidence | [`07-implementation-log.md`](../08-agent/07-implementation-log.md) |
 | Unresolved normative conflicts | [`08-specification-conflicts.md`](../08-agent/08-specification-conflicts.md) |
-| Operations | [`01-local-development-runbook.md`](../09-operations/01-local-development-runbook.md) |
+| Local operations | [`01-local-development-runbook.md`](../09-operations/01-local-development-runbook.md) |
 
 ## Change control
 
@@ -45,6 +50,8 @@
 - A safety-boundary change requires threat-model and RoE review.
 - A pipeline-gate exception requires an expiring risk acceptance.
 - Documents should link to identifiers rather than duplicate normative text.
+- A staged control must be labeled as staged until merged and verified in the target runtime.
+- Authentication documentation must identify the exact trust boundary and may not rely on examples that broaden production privileges.
 
 ## Package conventions
 
@@ -52,5 +59,4 @@
 - IDs are stable and never reused.
 - Mermaid is the diagram source of record.
 - Examples use reserved domains, private address space and synthetic identities.
-- Templates are starting points; completed records belong in the implementation
-  repository under version control.
+- Templates are starting points; completed records belong in the implementation repository under version control.
