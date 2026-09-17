@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-09-17",
+  "platform": {
+    "rke2": {
+      "version": "v1.36.4+rke2r1",
+      "kubernetes": "v1.36.4",
+      "reason": "Pinned to Kubernetes 1.36 because Cilium 1.20.2 guarantees e2e compatibility through Kubernetes 1.36; RKE2 1.37.0 is newer but outside that guaranteed matrix."
+    },
+    "cilium": {
+      "version": "1.20.2",
+      "supportedKubernetesMin": "1.33",
+      "supportedKubernetesMax": "1.36",
+      "installationMode": "external-helm",
+      "reason": "Use the upstream Cilium chart rather than the RKE2-bundled Cilium 1.19.6 to keep BGP/LB-IPAM and security fixes on the current stable Cilium line."
+    },
+    "harbor": {
+      "version": "2.15.2",
+      "deploymentState": "deferred",
+      "reason": "2.15.2 is the latest verified stable Harbor image line found during this review. The latest published harbor-helm chart still targeted 2.15.1, so HA Helm deployment remains blocked until a compatible chart is explicitly pinned and tested."
+    },
+    "kubeVip": {
+      "version": "v1.2.3",
+      "deploymentState": "alternative-only",
+      "reason": "Not the control-plane VIP baseline. HAProxy plus Keepalived is preferred outside the cluster to remove bootstrap dependency on Kubernetes API availability."
+    }
+  }
+}
