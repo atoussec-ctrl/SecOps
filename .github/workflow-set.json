@@ -1,5 +1,5 @@
 {
-  "workflow_set_version": "1.0.0",
+  "workflow_set_version": "1.1.0",
   "workflows": {
     "pr": {
       "name": "Pull request",
@@ -92,6 +92,142 @@
               "name": "Assert the mutation catalogue",
               "kind": "run",
               "command": "node tools/repo.mjs check:mutation"
+            }
+          ]
+        }
+      }
+    },
+    "supply-chain-smoke": {
+      "name": "Supply chain smoke",
+      "triggers": {
+        "workflow_dispatch": true
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "jobs": {
+        "build-sign-attest": {
+          "name": "Build once, scan, sign and attest",
+          "runs_on": "ubuntu-latest",
+          "permissions": {
+            "contents": "read",
+            "packages": "write",
+            "id-token": "write",
+            "attestations": "write"
+          },
+          "timeout_minutes": 30,
+          "steps": [
+            {
+              "name": "Check out the repository",
+              "kind": "action",
+              "action_ref": "actionsCheckout"
+            },
+            {
+              "name": "Set up the pinned Node runtime",
+              "kind": "action",
+              "action_ref": "actionsSetupNode",
+              "with": {
+                "node-version": "24.18.1"
+              }
+            },
+            {
+              "name": "Build the deterministic fixture exactly once",
+              "kind": "run",
+              "command": "docker build --tag secops-supply-chain-fixture:ci tests/pipeline/fixtures/release-image"
+            },
+            {
+              "name": "Scan the built image with pinned Trivy",
+              "kind": "action",
+              "action_ref": "aquaTrivy",
+              "with": {
+                "scan-type": "image",
+                "image-ref": "secops-supply-chain-fixture:ci",
+                "exit-code": "1",
+                "ignore-unfixed": "false",
+                "severity": "HIGH,CRITICAL",
+                "scanners": "vuln",
+                "cache": "false",
+                "version": "v0.70.0"
+              }
+            },
+            {
+              "name": "Generate SPDX JSON SBOM with pinned Syft",
+              "kind": "action",
+              "action_ref": "anchoreSbom",
+              "with": {
+                "image": "secops-supply-chain-fixture:ci",
+                "format": "spdx-json",
+                "output-file": "sbom.spdx.json",
+                "syft-version": "v1.51.1",
+                "dependency-snapshot": "false",
+                "upload-artifact": "false",
+                "upload-release-assets": "false"
+              }
+            },
+            {
+              "name": "Authenticate to GHCR with the repository token",
+              "kind": "action",
+              "action_ref": "dockerLogin",
+              "with": {
+                "registry": "ghcr.io",
+                "username": {
+                  "expression": "github.actor"
+                },
+                "password": {
+                  "expression": "secrets.GITHUB_TOKEN"
+                }
+              }
+            },
+            {
+              "name": "Publish the already scanned image and capture its registry digest",
+              "id": "push",
+              "kind": "run",
+              "command": "ref=\"ghcr.io/atoussec-ctrl/secops-supply-chain-fixture:$GITHUB_SHA\"; docker tag secops-supply-chain-fixture:ci \"$ref\"; docker push \"$ref\"; docker buildx imagetools inspect \"$ref\" --format '{{json .Manifest}}' > registry-manifest.json; digest=\"$(node -e 'const fs=require(\"fs\");const m=JSON.parse(fs.readFileSync(\"registry-manifest.json\",\"utf8\"));if(!/^sha256:[0-9a-f]{64}$/.test(m.digest))process.exit(1);process.stdout.write(m.digest)')\"; printf 'digest=%s\\n' \"$digest\" >> \"$GITHUB_OUTPUT\"; printf '%s\\n' \"$digest\" > image-digest.txt"
+            },
+            {
+              "name": "Generate build provenance for the published digest",
+              "kind": "action",
+              "action_ref": "actionsAttest",
+              "with": {
+                "subject-name": "ghcr.io/atoussec-ctrl/secops-supply-chain-fixture",
+                "subject-digest": {
+                  "expression": "steps.push.outputs.digest"
+                },
+                "push-to-registry": "true",
+                "create-storage-record": "false"
+              }
+            },
+            {
+              "name": "Attach the SBOM attestation to the same digest",
+              "kind": "action",
+              "action_ref": "actionsAttest",
+              "with": {
+                "subject-name": "ghcr.io/atoussec-ctrl/secops-supply-chain-fixture",
+                "subject-digest": {
+                  "expression": "steps.push.outputs.digest"
+                },
+                "sbom-path": "sbom.spdx.json",
+                "push-to-registry": "true",
+                "create-storage-record": "false"
+              }
+            },
+            {
+              "name": "Install the pinned Cosign release",
+              "kind": "action",
+              "action_ref": "cosignInstaller",
+              "with": {
+                "cosign-release": "v3.1.3"
+              }
+            },
+            {
+              "name": "Sign the exact published digest with GitHub OIDC",
+              "kind": "run",
+              "command": "digest=\"$(cat image-digest.txt)\"; test -n \"$digest\"; cosign sign --yes \"ghcr.io/atoussec-ctrl/secops-supply-chain-fixture@$digest\""
+            },
+            {
+              "name": "Verify the signature is from the protected main workflow identity",
+              "kind": "run",
+              "command": "digest=\"$(cat image-digest.txt)\"; cosign verify \"ghcr.io/atoussec-ctrl/secops-supply-chain-fixture@$digest\" --certificate-identity=\"https://github.com/atoussec-ctrl/SecOps/.github/workflows/supply-chain-smoke.yml@refs/heads/main\" --certificate-oidc-issuer=\"https://token.actions.githubusercontent.com\""
             }
           ]
         }
