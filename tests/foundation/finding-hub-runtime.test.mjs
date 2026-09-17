@@ -13,16 +13,21 @@ const repositoryRoot = path.resolve(
 const findingHubRoot = path.join(repositoryRoot, "services", "finding-hub");
 const interpreter = process.env.PYTHON ?? "python3";
 
+const findingHubArgs = [
+  "-m",
+  "unittest",
+  "discover",
+  "-s",
+  "tests",
+  "-v",
+];
+
 test("E1-010 Finding Hub fingerprint and baseline tests execute for real", () => {
-  const result = spawnSync(
-    interpreter,
-    ["-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"],
-    {
-      cwd: findingHubRoot,
-      encoding: "utf8",
-      env: { ...process.env },
-    },
-  );
+  const result = spawnSync(interpreter, findingHubArgs, {
+    cwd: findingHubRoot,
+    encoding: "utf8",
+    env: { ...process.env },
+  });
 
   assert.equal(result.error, undefined, result.error?.message);
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
@@ -36,11 +41,10 @@ test("E1-010 Finding Hub fingerprint and baseline tests execute for real", () =>
 });
 
 test("E1-010 a missing Python interpreter cannot silently skip Finding Hub", () => {
-  const result = spawnSync(
-    "python-that-is-not-installed",
-    ["-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"],
-    { cwd: findingHubRoot, encoding: "utf8" },
-  );
+  const result = spawnSync("python-that-is-not-installed", findingHubArgs, {
+    cwd: findingHubRoot,
+    encoding: "utf8",
+  });
 
   assert.ok(result.error, "a missing interpreter must be distinguishable from a passing suite");
   assert.notEqual(result.status, 0);
