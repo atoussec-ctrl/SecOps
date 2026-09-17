@@ -132,6 +132,41 @@ def test_gate_policy_is_fail_closed_for_supply_chain() -> None:
     assert policy["exceptions"]["expired_decision"] == "block"
 
 
+def test_main_governance_blocks_unsafe_release_enablement() -> None:
+    policy = json.loads(text("security/github/main-governance.json"))
+    assert policy["repository"] == "atoussec-ctrl/SecOps"
+    assert policy["target_branch"] == "main"
+    assert policy["required_enforcement"] == "active"
+
+    merge = policy["merge_policy"]
+    for invariant in (
+        "require_pull_request",
+        "dismiss_stale_reviews",
+        "require_code_owner_review",
+        "require_last_push_approval",
+        "require_conversation_resolution",
+        "require_signed_commits",
+        "require_merge_queue",
+        "require_branch_up_to_date",
+    ):
+        assert merge[invariant] is True, f"main governance must keep {invariant} enabled"
+    assert merge["required_approving_reviews"] >= 1
+    assert "Repository checks" in merge["required_status_checks"]
+
+    push = policy["push_policy"]
+    assert push["allow_force_pushes"] is False
+    assert push["allow_deletions"] is False
+    assert push["direct_push_to_main"] is False
+    assert push["bypass_mode"] == "break-glass-only"
+
+    release = policy["release_prerequisites"]
+    assert release["ruleset_must_exist"] is True
+    assert release["ruleset_must_be_active"] is True
+    assert release["required_check_must_be_bound"] is True
+    assert release["release_ref"] == "refs/heads/main"
+    assert release["privileged_workflow_is_not_merge_ready_until_live_governance_matches"] is True
+
+
 def run() -> None:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     failures = []
