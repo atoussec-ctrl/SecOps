@@ -47,33 +47,37 @@ JWT = re.compile(
     r"[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
     r"(?![A-Za-z0-9_-])"
 )
+
+# Horizontal whitespace is intentional here. ``\s`` would also match a newline
+# and could merge one HTTP header with the next before redaction.
 AUTHORIZATION = re.compile(
-    r"(?im)^(?P<prefix>\s*(?:proxy-)?authorization\s*:\s*)"
-    r"(?P<scheme>bearer|basic|token)\s+[^\r\n]+$"
+    r"(?im)^(?P<prefix>[ \t]*(?:proxy-)?authorization[ \t]*:[ \t]*)"
+    r"(?P<scheme>bearer|basic|token)[ \t]+[^\r\n]+$"
 )
 COOKIE = re.compile(
-    r"(?im)^(?P<prefix>\s*(?:cookie|set-cookie)\s*:\s*)[^\r\n]+$"
+    r"(?im)^(?P<prefix>[ \t]*(?:cookie|set-cookie)[ \t]*:[ \t]*)[^\r\n]+$"
 )
 URI_CREDENTIAL = re.compile(
     r"(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*://)"
     r"(?P<user>[^/@:\s]+):(?P<secret>[^/@\s]+)@"
 )
 
-# JSON, env, YAML and loose key/value logs. The key set is intentionally about
-# values that are secrets, not identifiers such as client_id or access_key_id.
-SECRET_VALUE = re.compile(
-    r"(?ix)"
-    r"(?P<prefix>"
-    r"(?:\"|'|\b)?"
+# JSON, env, YAML and loose key/value logs. Quoted and unquoted values are
+# deliberately separate expressions. A single optional quote expression can
+# ambiguously consume an opening quote and then fail to redact the value.
+_SECRET_KEY = (
     r"(?:password|passwd|pwd|secret|client_secret|api[_-]?key|access[_-]?token|"
     r"refresh[_-]?token|auth[_-]?token|private[_-]?key)"
-    r"(?:\"|'|\b)?"
-    r"\s*(?:=|:)[ \t]*"
-    r")"
-    r"(?P<quote>[\"']?)"
-    r"(?P<value>[^\s,;\}\]\r\n\"']{1,4096}|[^\r\n]{1,4096}?)"
-    r"(?P=quote)"
-    r"(?=(?:\s*(?:[,;\}\]]|$)))"
+)
+_SECRET_PREFIX = rf"(?P<prefix>(?:[\"']?{_SECRET_KEY}[\"']?)[ \t]*(?:=|:)[ \t]*)"
+SECRET_DOUBLE_QUOTED = re.compile(
+    rf"(?i){_SECRET_PREFIX}\"(?P<value>[^\"\r\n]{{1,4096}})\""
+)
+SECRET_SINGLE_QUOTED = re.compile(
+    rf"(?i){_SECRET_PREFIX}'(?P<value>[^'\r\n]{{1,4096}})'"
+)
+SECRET_UNQUOTED = re.compile(
+    rf"(?i){_SECRET_PREFIX}(?P<value>[^\s,;\}}\]\r\n\"']{{1,4096}})"
 )
 
 # Common vendor token prefixes. These are supplemental to key/value redaction
@@ -153,11 +157,25 @@ def redact_text(text: str) -> RedactionResult:
         )
 
     result = _sub(
-        SECRET_VALUE,
+        SECRET_DOUBLE_QUOTED,
         result,
         "KEY_VALUE_SECRET",
         counts,
-        lambda match: f"{match.group('prefix')}{match.group('quote')}{_marker('SECRET')}{match.group('quote')}",
+        lambda match: f"{match.group('prefix')}\"{_marker('SECRET')}\"",
+    )
+    result = _sub(
+        SECRET_SINGLE_QUOTED,
+        result,
+        "KEY_VALUE_SECRET",
+        counts,
+        lambda match: f"{match.group('prefix')}'{_marker('SECRET')}'",
+    )
+    result = _sub(
+        SECRET_UNQUOTED,
+        result,
+        "KEY_VALUE_SECRET",
+        counts,
+        lambda match: f"{match.group('prefix')}{_marker('SECRET')}",
     )
 
     return RedactionResult(text=result, counts=dict(sorted(counts.items())))
