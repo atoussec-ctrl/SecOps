@@ -1,0 +1,28 @@
+{
+  "artifact": {
+    "name": "ghcr.io/atoussec-ctrl/secops-fixture",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "source": {
+    "repository": "atoussec-ctrl/SecOps",
+    "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "workflow": ".github/workflows/supply-chain-smoke.yml"
+  },
+  "evidence": {
+    "sbom_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "vulnerability_scan_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "malware_scan_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "signals": {
+    "malware_detected": false,
+    "secret_detected": false,
+    "signature_valid": true,
+    "provenance_valid": true,
+    "sbom_present": true,
+    "cisa_kev_affected": 0,
+    "critical_reachable": 0,
+    "unsigned_image": false,
+    "high_reachable_count": 0,
+    "high_reachable_max_epss": 0
+  }
+}
