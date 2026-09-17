@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-dev
+  namespace: argocd
+spec:
+  project: secure-delivery
+  source:
+    repoURL: https://github.com/atoussec-ctrl/SecOps.git
+    targetRevision: main
+    path: infra/delivery/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-homol
+  namespace: argocd
+spec:
+  project: secure-delivery
+  source:
+    repoURL: https://github.com/atoussec-ctrl/SecOps.git
+    targetRevision: main
+    path: infra/delivery/overlays/homol
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-homol
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-prod
+  namespace: argocd
+spec:
+  project: secure-delivery
+  source:
+    repoURL: https://github.com/atoussec-ctrl/SecOps.git
+    targetRevision: main
+    path: infra/delivery/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
