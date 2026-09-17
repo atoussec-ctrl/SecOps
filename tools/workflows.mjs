@@ -162,7 +162,12 @@ export function checkWorkflowPolicy(descriptor, manifest) {
   }
 
   for (const [workflowId, workflow] of workflows) {
-    const triggeredByPullRequest = workflow.triggers.pull_request !== undefined;
+    // Both pull_request and merge_group evaluate code that has not yet landed
+    // on the protected release branch. Merge-queue candidates therefore keep
+    // the same read-only token boundary as ordinary pull requests.
+    const triggeredByUnreleasedChange =
+      workflow.triggers.pull_request !== undefined ||
+      workflow.triggers.merge_group !== undefined;
 
     if (Object.keys(workflow.triggers).length === 0) {
       problems.push(`${workflowId}: declares no trigger`);
@@ -181,11 +186,10 @@ export function checkWorkflowPolicy(descriptor, manifest) {
     }
 
     for (const [jobId, job] of jobs) {
-      // An untrusted pull request must never run with a writable token.
-      if (triggeredByPullRequest) {
+      if (triggeredByUnreleasedChange) {
         for (const scope of grantsWrite(job.permissions)) {
           problems.push(
-            `${workflowId}/${jobId}: permission "${scope}" is write in a pull-request workflow`,
+            `${workflowId}/${jobId}: permission "${scope}" is write in a pull-request or merge-group workflow`,
           );
         }
       }
