@@ -4,4 +4,8 @@ token: "REPLACE_FROM_VAULT"
 
 node-label:
   - "node.secops.io/role=worker"
-  - "topology.kubernetes.io/zone=dev-zone-a"
+
+# Add topology labels per node from the datacenter inventory rather than
+# copying one zone/rack onto every worker. Example on a specific host:
+#   - "topology.kubernetes.io/zone=dc1-rack-a"
+#   - "node.secops.io/failure-domain=hypervisor-01"
