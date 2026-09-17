@@ -6,10 +6,11 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const scriptPath = path.join(root, "infra", "onprem", "scripts", "node-preflight.sh");
+const nodePreflight = path.join(root, "infra", "onprem", "scripts", "node-preflight.sh");
+const clusterReadiness = path.join(root, "infra", "onprem", "scripts", "cluster-readiness.sh");
 
 test("on-prem node preflight is read-only and checks the selected host invariants", async () => {
-  const script = await readFile(scriptPath, "utf8");
+  const script = await readFile(nodePreflight, "utf8");
 
   for (const required of [
     "kernel >= 5.10",
@@ -36,8 +37,40 @@ test("on-prem node preflight is read-only and checks the selected host invariant
   }
 });
 
-test("on-prem node preflight has valid Bash syntax", () => {
-  const result = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
-  assert.equal(result.error, undefined, result.error?.message);
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+test("on-prem cluster readiness is observational and checks the trust boundary", async () => {
+  const script = await readFile(clusterReadiness, "utf8");
+
+  for (const required of [
+    "Kubernetes API readyz",
+    "kube-proxy DaemonSet is absent",
+    "Cilium status is healthy",
+    "Pod Security Restricted",
+    "default-deny-all",
+    "allow-dns-egress",
+    "no active Cilium BGP cluster configuration",
+  ]) {
+    assert.ok(script.includes(required), `cluster readiness misses ${required}`);
+  }
+
+  for (const forbidden of [
+    "kubectl apply",
+    "kubectl delete",
+    "kubectl patch",
+    "kubectl edit",
+    "kubectl create",
+    "helm install",
+    "helm upgrade",
+    "systemctl stop",
+    "rm -rf",
+  ]) {
+    assert.ok(!script.includes(forbidden), `cluster readiness must remain observational: ${forbidden}`);
+  }
+});
+
+test("on-prem operational scripts have valid Bash syntax", () => {
+  for (const scriptPath of [nodePreflight, clusterReadiness]) {
+    const result = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
+    assert.equal(result.error, undefined, result.error?.message);
+    assert.equal(result.status, 0, `${scriptPath}\n${result.stdout}\n${result.stderr}`);
+  }
 });
