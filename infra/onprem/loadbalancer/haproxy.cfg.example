@@ -1,0 +1,37 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    user haproxy
+    group haproxy
+    daemon
+    maxconn 4096
+
+    # TLS is terminated by kube-apiserver, not HAProxy.
+    # Keep this load balancer at layer 4.
+
+defaults
+    log global
+    mode tcp
+    option tcplog
+    option dontlognull
+    timeout connect 5s
+    timeout client  60s
+    timeout server  60s
+
+listen rke2-kubernetes-api
+    bind 10.20.0.10:6443
+    mode tcp
+    option tcp-check
+    balance roundrobin
+    server cp01 10.20.0.11:6443 check inter 2s fall 3 rise 2
+    server cp02 10.20.0.12:6443 check inter 2s fall 3 rise 2
+    server cp03 10.20.0.13:6443 check inter 2s fall 3 rise 2
+
+listen rke2-supervisor
+    bind 10.20.0.10:9345
+    mode tcp
+    option tcp-check
+    balance roundrobin
+    server cp01 10.20.0.11:9345 check inter 2s fall 3 rise 2
+    server cp02 10.20.0.12:9345 check inter 2s fall 3 rise 2
+    server cp03 10.20.0.13:9345 check inter 2s fall 3 rise 2
