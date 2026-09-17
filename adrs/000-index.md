@@ -17,6 +17,7 @@ All records below are accepted for version 1.0 unless superseded by a later ADR.
 | [ADR-011](011-canonical-scope-serialization.md) | Canonical serialization for the scope digest |
 | [ADR-012](012-execution-grants.md) | Execution grant contract, skew and replay window (proposed) |
 | [ADR-013](013-audit-chain.md) | Tamper-evident audit chain (proposed) |
+| [ADR-014](014-keyless-release-attestations.md) | Keyless release attestations with no silent static-key fallback (proposed) |
 
 Use [`templates/adr-template.md`](../templates/adr-template.md) for new records.
 
