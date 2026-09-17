@@ -7,6 +7,8 @@ metadata:
 spec:
   replicas: 4
   revisionHistoryLimit: 5
+  progressDeadlineSeconds: 600
+  progressDeadlineAbort: true
   rollbackWindow:
     revisions: 3
   selector:
@@ -64,25 +66,19 @@ spec:
       maxSurge: 25%
       maxUnavailable: 0
       steps:
-        - setWeight: 1
+        - setWeight: 25
         - pause:
             duration: 2m
         - analysis:
             templates:
               - templateName: app-canary-analysis
-        - setWeight: 5
+        - setWeight: 50
         - pause:
             duration: 3m
         - analysis:
             templates:
               - templateName: app-canary-analysis
-        - setWeight: 20
-        - pause:
-            duration: 5m
-        - analysis:
-            templates:
-              - templateName: app-canary-analysis
-        - setWeight: 50
+        - setWeight: 75
         - pause:
             duration: 5m
         - analysis:
