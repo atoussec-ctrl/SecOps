@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "environment": "dev",
+  "domain": "infra.example.com",
+  "network": {
+    "nodeCidr": "10.20.0.0/24",
+    "podCidr": "10.120.0.0/16",
+    "serviceCidr": "10.121.0.0/16",
+    "loadBalancerPool": {
+      "start": "10.20.50.100",
+      "stop": "10.20.50.199"
+    },
+    "api": {
+      "vip": "10.20.0.10",
+      "dns": "k8s-dev-api.infra.example.com"
+    },
+    "bgp": {
+      "enabled": false,
+      "localAsn": 65020,
+      "peerAsn": 65000,
+      "peerAddress": "10.20.0.1"
+    }
+  },
+  "loadBalancers": [
+    {"name": "secops-dev-lb01", "address": "10.20.0.5"},
+    {"name": "secops-dev-lb02", "address": "10.20.0.6"}
+  ],
+  "controlPlane": [
+    {"name": "secops-dev-cp01", "address": "10.20.0.11"},
+    {"name": "secops-dev-cp02", "address": "10.20.0.12"},
+    {"name": "secops-dev-cp03", "address": "10.20.0.13"}
+  ],
+  "workers": [
+    {"name": "secops-dev-w01", "address": "10.20.0.21"},
+    {"name": "secops-dev-w02", "address": "10.20.0.22"},
+    {"name": "secops-dev-w03", "address": "10.20.0.23"}
+  ],
+  "secrets": {
+    "rke2JoinToken": "FROM_VAULT",
+    "bgpPassword": "FROM_VAULT_IF_ENABLED",
+    "snapshotS3Credentials": "FROM_VAULT"
+  }
+}
