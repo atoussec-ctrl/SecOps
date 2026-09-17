@@ -1,0 +1,42 @@
+{
+  "assessment_version": "1.0.0",
+  "assessment_id": "ASM-2026-0001",
+  "project_profile_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mode": "static-readonly",
+  "policy": {
+    "policy_id": "enterprise-web",
+    "policy_version": "1.0.0"
+  },
+  "baseline": {
+    "mode": "initial"
+  },
+  "capabilities": [
+    "inventory",
+    "sast",
+    "secrets",
+    "sca",
+    "workflow",
+    "sbom"
+  ],
+  "advisory_data": {
+    "mode": "offline-snapshot",
+    "snapshot_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "retrieved_at": "2026-09-17T12:00:00Z"
+  },
+  "safety": {
+    "source_access": "read-only",
+    "execute_project_scripts": false,
+    "install_dependencies": false,
+    "network_access": "none",
+    "follow_symlinks": false,
+    "allow_outside_root": false,
+    "max_duration_seconds": 900
+  },
+  "outputs": {
+    "workspace_root": "./workspaces/ASM-2026-0001",
+    "formats": ["json", "sarif", "cyclonedx", "markdown"],
+    "redact_secrets": true,
+    "include_raw_secret_values": false,
+    "retain_raw_evidence": false
+  }
+}
