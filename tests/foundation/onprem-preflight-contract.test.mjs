@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -33,4 +34,10 @@ test("on-prem node preflight is read-only and checks the selected host invariant
   ]) {
     assert.ok(!script.includes(forbidden), `preflight must remain read-only: ${forbidden}`);
   }
+});
+
+test("on-prem node preflight has valid Bash syntax", () => {
+  const result = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
