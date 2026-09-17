@@ -1,0 +1,35 @@
+global_defs {
+    router_id SECOPS_DEV_LB
+    enable_script_security
+    script_user root
+}
+
+vrrp_script chk_haproxy {
+    script "/usr/bin/pgrep haproxy"
+    interval 2
+    timeout 2
+    fall 3
+    rise 2
+    weight -30
+}
+
+vrrp_instance RKE2_API_VIP {
+    state BACKUP
+    interface eth0
+    virtual_router_id 42
+    priority 150
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass REPLACE_WITH_VAULT_MANAGED_VALUE
+    }
+
+    virtual_ipaddress {
+        10.20.0.10/24 dev eth0
+    }
+
+    track_script {
+        chk_haproxy
+    }
+}

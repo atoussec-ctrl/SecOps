@@ -1,0 +1,11 @@
+# /etc/rancher/rke2/config.yaml on worker/agent nodes.
+server: "https://10.20.0.10:9345"
+token: "REPLACE_FROM_VAULT"
+
+node-label:
+  - "node.secops.io/role=worker"
+
+# Add topology labels per node from the datacenter inventory rather than
+# copying one zone/rack onto every worker. Example on a specific host:
+#   - "topology.kubernetes.io/zone=dc1-rack-a"
+#   - "node.secops.io/failure-domain=hypervisor-01"

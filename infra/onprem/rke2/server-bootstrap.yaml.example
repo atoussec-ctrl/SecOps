@@ -1,0 +1,30 @@
+# /etc/rancher/rke2/config.yaml on the first server only.
+token: "REPLACE_FROM_VAULT"
+write-kubeconfig-mode: "0600"
+
+tls-san:
+  - "10.20.0.10"
+  - "k8s-dev-api.infra.example.com"
+
+profile: "cis"
+secrets-encryption: true
+audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
+pod-security-admission-config-file: "/etc/rancher/rke2/pod-security-admission.yaml"
+
+# Upstream Cilium is installed separately and replaces kube-proxy.
+cni: none
+disable-kube-proxy: true
+
+# RKE2 1.36 deploys Traefik by default. Keep ingress selection explicit.
+ingress-controller: none
+
+cluster-cidr: "10.120.0.0/16"
+service-cidr: "10.121.0.0/16"
+cluster-domain: "cluster.local"
+
+node-taint:
+  - "node-role.kubernetes.io/control-plane=true:NoSchedule"
+
+etcd-snapshot-schedule-cron: "0 */6 * * *"
+etcd-snapshot-retention: 28
+etcd-snapshot-compress: true

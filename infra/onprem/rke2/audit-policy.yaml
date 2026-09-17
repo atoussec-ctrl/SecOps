@@ -1,0 +1,25 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+  - RequestReceived
+rules:
+  # Never record Secret request or response bodies. Metadata still preserves
+  # who accessed or changed a Secret and when.
+  - level: Metadata
+    resources:
+      - group: ""
+        resources:
+          - secrets
+
+  # Keep change intent for mutating API operations without using
+  # RequestResponse, which can persist sensitive response bodies.
+  - level: Request
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+      - deletecollection
+
+  # Retain attribution for all remaining requests.
+  - level: Metadata
