@@ -35,11 +35,13 @@ def test_rollout_is_digest_pinned_and_hardened() -> None:
         "- ALL",
         "rollbackWindow:",
         "revisions: 3",
+        "progressDeadlineSeconds: 600",
+        "progressDeadlineAbort: true",
         "maxUnavailable: 0",
     ):
         assert required in rollout, f"missing rollout hardening invariant: {required}"
     weights = [int(value) for value in re.findall(r"setWeight:\s*(\d+)", rollout)]
-    assert weights == [1, 5, 20, 50], weights
+    assert weights == [25, 50, 75], weights
 
 
 def test_analysis_requires_repeated_evidence() -> None:
@@ -56,6 +58,13 @@ def test_analysis_requires_repeated_evidence() -> None:
 
 
 def test_argocd_is_pull_based_and_self_healing() -> None:
+    project = text("infra/delivery/argocd/project.yaml")
+    assert "name: secure-delivery" in project
+    assert project.count("server: https://kubernetes.default.svc") == 3
+    for namespace in ("app-dev", "app-homol", "app-prod"):
+        assert f"namespace: {namespace}" in project
+    assert "https://github.com/atoussec-ctrl/SecOps.git" in project
+
     manifests = [part.strip() for part in text("infra/delivery/argocd/applications.yaml").split("---")]
     assert len(manifests) == 3
     names = set()
