@@ -49,9 +49,10 @@
     "triggers": {
       "type": "object",
       "additionalProperties": false,
-      "description": "pull_request_target is absent on purpose: it runs with repository secrets in the context of the base branch, and the protected-policy question is unresolved (docs/08-agent/08-specification-conflicts.md, entry 8).",
+      "description": "pull_request_target is absent on purpose: it runs with repository secrets in the context of the base branch. merge_group is explicit so required CI also runs against merge-queue candidate commits.",
       "properties": {
         "pull_request": { "$ref": "#/$defs/branch_filter" },
+        "merge_group": { "$ref": "#/$defs/branch_filter" },
         "push": { "$ref": "#/$defs/branch_filter" },
         "workflow_dispatch": { "const": true }
       }
