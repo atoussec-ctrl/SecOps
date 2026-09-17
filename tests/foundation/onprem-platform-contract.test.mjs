@@ -122,6 +122,14 @@ test("Pod Security and application networking start fail-closed", async () => {
   assert.ok(deny.includes("podSelector: {}"));
   assert.ok(deny.includes("    - Ingress"));
   assert.ok(deny.includes("    - Egress"));
+
+  const dns = await text("infra/onprem/policies/app-allow-dns.yaml");
+  assert.ok(dns.includes("name: allow-dns-egress"));
+  assert.ok(dns.includes("kubernetes.io/metadata.name: kube-system"));
+  assert.ok(dns.includes("k8s-app: kube-dns"));
+  assert.ok(dns.includes("protocol: UDP"));
+  assert.ok(dns.includes("protocol: TCP"));
+  assert.ok(dns.match(/port: 53/g)?.length === 2);
 });
 
 test("the external load balancer owns both RKE2 fixed endpoints", async () => {
