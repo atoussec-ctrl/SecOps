@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-lab.invalid/contracts/ci/release-gate-input.schema.json",
+  "title": "Release Gate Input",
+  "description": "Normalized evidence for one immutable OCI artifact before promotion. Scanner-specific output is adapted into this bounded contract so the release decision never depends on free-form tool text.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact", "source", "evidence", "signals"],
+  "properties": {
+    "artifact": { "$ref": "#/$defs/artifact" },
+    "source": { "$ref": "#/$defs/source" },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "signals": { "$ref": "#/$defs/signals" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "digest"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^ghcr\\.io/atoussec-ctrl/[a-z0-9._/-]{1,180}$"
+        },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "workflow"],
+      "properties": {
+        "repository": { "const": "atoussec-ctrl/SecOps" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "workflow": { "type": "string", "minLength": 3, "maxLength": 160 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sbom_digest", "vulnerability_scan_digest", "malware_scan_digest"],
+      "properties": {
+        "sbom_digest": { "$ref": "#/$defs/sha256" },
+        "vulnerability_scan_digest": { "$ref": "#/$defs/sha256" },
+        "malware_scan_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "malware_detected",
+        "secret_detected",
+        "signature_valid",
+        "provenance_valid",
+        "sbom_present",
+        "cisa_kev_affected",
+        "critical_reachable",
+        "unsigned_image",
+        "high_reachable_count",
+        "high_reachable_max_epss"
+      ],
+      "properties": {
+        "malware_detected": { "type": "boolean" },
+        "secret_detected": { "type": "boolean" },
+        "signature_valid": { "type": "boolean" },
+        "provenance_valid": { "type": "boolean" },
+        "sbom_present": { "type": "boolean" },
+        "cisa_kev_affected": { "type": "integer", "minimum": 0 },
+        "critical_reachable": { "type": "integer", "minimum": 0 },
+        "unsigned_image": { "type": "boolean" },
+        "high_reachable_count": { "type": "integer", "minimum": 0 },
+        "high_reachable_max_epss": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

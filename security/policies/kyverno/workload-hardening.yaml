@@ -1,0 +1,51 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: secure-delivery-workload-hardening
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  webhookConfiguration:
+    timeoutSeconds: 10
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
+  matchConditions:
+    - name: delivery-namespace
+      expression: "object.metadata.namespace in ['app-dev', 'app-homol', 'app-prod']"
+  variables:
+    - name: allContainers
+      expression: >-
+        object.spec.containers
+        + object.spec.?initContainers.orValue([])
+        + object.spec.?ephemeralContainers.orValue([])
+  validations:
+    - message: All containers must run non-root.
+      expression: >-
+        variables.allContainers.all(c,
+          has(c.securityContext) &&
+          c.securityContext.?runAsNonRoot.orValue(false) == true)
+    - message: Privilege escalation must be disabled for all containers.
+      expression: >-
+        variables.allContainers.all(c,
+          has(c.securityContext) &&
+          c.securityContext.?allowPrivilegeEscalation.orValue(true) == false)
+    - message: All containers must use a read-only root filesystem.
+      expression: >-
+        variables.allContainers.all(c,
+          has(c.securityContext) &&
+          c.securityContext.?readOnlyRootFilesystem.orValue(false) == true)
+    - message: All containers must drop all Linux capabilities.
+      expression: >-
+        variables.allContainers.all(c,
+          has(c.securityContext) &&
+          c.securityContext.?capabilities.?drop.orValue([]).exists(x, x == 'ALL'))

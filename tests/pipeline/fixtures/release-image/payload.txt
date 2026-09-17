@@ -1,0 +1,2 @@
+SecOps secure-delivery supply-chain fixture.
+This image is non-runtime test data and must never be promoted as an application workload.

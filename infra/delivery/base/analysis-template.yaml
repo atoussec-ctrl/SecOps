@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: app-canary-analysis
+spec:
+  metrics:
+    - name: http-5xx-rate
+      interval: 30s
+      count: 3
+      failureLimit: 2
+      successCondition: result[0] < 0.02
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{service="app-canary",status=~"5.."}[2m]))
+            /
+            clamp_min(sum(rate(http_requests_total{service="app-canary"}[2m])), 0.001)
+    - name: p95-latency-seconds
+      interval: 30s
+      count: 3
+      failureLimit: 2
+      successCondition: result[0] < 1.0
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            histogram_quantile(
+              0.95,
+              sum by (le) (rate(http_request_duration_seconds_bucket{service="app-canary"}[2m]))
+            )

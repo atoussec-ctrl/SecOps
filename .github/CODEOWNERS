@@ -1,0 +1,15 @@
+# Default ownership for the SecOps repository.
+* @atoussec-ctrl
+
+# Delivery and GitHub control plane.
+/.github/ @atoussec-ctrl
+/security/ @atoussec-ctrl
+/infra/ @atoussec-ctrl
+/adrs/ @atoussec-ctrl
+/version-manifest.json @atoussec-ctrl
+
+# Contracts, policy engines and orchestration safety boundaries.
+/packages/contracts/ @atoussec-ctrl
+/tools/ @atoussec-ctrl
+/services/orchestrator/ @atoussec-ctrl
+/tests/pipeline/ @atoussec-ctrl
