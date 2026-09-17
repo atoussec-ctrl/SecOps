@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: dev-services
+spec:
+  blocks:
+    - start: "10.20.50.100"
+      stop: "10.20.50.199"
+  serviceSelector:
+    matchLabels:
+      lb.secops.io/pool: dev-services
