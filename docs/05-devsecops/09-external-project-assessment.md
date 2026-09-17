@@ -146,9 +146,15 @@ separate authorization contract.
 
 ## Result normalization
 
-Every adapter result must include tool identity/version, project profile digest,
-commit SHA, rule identity, normalized project-relative location, confidence and
-raw-result digest.
+Every adapter execution produces a `scanner-run` receipt that binds tool
+identity/version, immutable tool artifact digest, assessment ID, project profile
+digest, capability, timing, process result and output digest. A process exit
+code alone is not a successful assessment.
+
+Scanner output is untrusted input. It is validated and redacted before it may
+become canonical evidence. Persisted evidence uses the
+`evidence-record.schema.json` contract, whose digest addresses **redacted
+bytes**, never raw secret-bearing output.
 
 Prefer SARIF 2.1.0 where the source tool supports it. SecOps also keeps its own
 canonical occurrence/finding format so GitHub-specific result limits do not
@@ -160,9 +166,15 @@ must remain complete.
 
 ## Secret evidence
 
-A secret detector never stores the full value in findings or normal reports.
-Evidence contains type, location, a one-way fingerprint and at most a safe
-redacted preview. Raw credentials are not a report artifact.
+A secret detector never stores the full value in findings, ordinary evidence or
+reports. Version 1 records only the secret type/category, safe location metadata
+and redacted placeholders needed to explain the finding.
+
+Version 1 deliberately does **not** persist a plain hash of the raw secret. A
+hash of a low-entropy password or token-like value can itself become an offline
+guessing oracle. If a future workflow needs cross-event secret correlation, it
+must introduce a separately reviewed keyed construction and lifecycle rather
+than silently widening this contract.
 
 If a future incident-response workflow needs protected raw evidence, that is a
 different capability with different storage, access control, retention and
@@ -170,18 +182,27 @@ authorization requirements.
 
 ## Baseline and change decisions
 
-The first scan creates an initial baseline. Subsequent scans compare stable
-finding fingerprints to a selected baseline commit and distinguish:
+A reviewed baseline is represented by `baseline-set.schema.json` and binds its
+finding identities to a project/profile digest, Git commit and policy version.
+Canonical fingerprints are versioned and exclude volatile scanner message text,
+timestamps and absolute line numbers.
 
-- new;
-- existing;
-- fixed;
-- reopened/regression;
-- changed evidence.
+Subsequent scans distinguish:
 
-Security gates should primarily prevent new verified risk while existing debt is
-tracked under explicit remediation or expiring risk acceptance. Hard safety
-invariants remain blocking regardless of baseline.
+- `new` — present now and absent from the reviewed baseline;
+- `existing` — present now and previously open;
+- `regressions` — present now after having been independently verified fixed;
+- `not_observed` — previously open but absent from this scan;
+- `verified_absent` — previously verified and still absent.
+
+`not_observed` is intentionally **not** called `fixed`. Scanner absence may be
+caused by configuration drift, coverage loss, parser failure or changed evidence.
+A finding reaches the existing lifecycle's `verified` state only after the
+required independent retest against the named artifact.
+
+Security gates should primarily prevent new verified risk and regressions while
+existing debt is tracked under explicit remediation or expiring risk acceptance.
+Hard safety invariants remain blocking regardless of baseline.
 
 ## Company policy isolation
 
@@ -277,7 +298,7 @@ Before static-readonly is considered implemented:
 7. secret results are redacted before persistence;
 8. all result records bind to project profile digest and commit SHA;
 9. missing scanner output produces incomplete/failure, never pass;
-10. baseline diff produces stable new/existing/fixed classifications;
+10. baseline diff produces stable new/existing/regression/not-observed classifications;
 11. Windows/WSL/Linux path fixtures are covered;
 12. company-specific policy can be loaded externally without being committed to
     the generic SecOps repository.
