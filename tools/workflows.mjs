@@ -17,8 +17,11 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/;
 
 // GitHub evaluates ${{ }} before the shell sees the script, so a value taken
 // from a pull request title or branch name becomes command injection
-// (docs/05-devsecops/04-static-supply-chain.md, workflow layer).
+// (docs/05-devsecops/04-static-supply-chain.md, workflow layer). Raw
+// expressions are therefore rejected. The descriptor has a separate typed and
+// allowlisted representation for the few action inputs that need expressions.
 const WORKFLOW_EXPRESSION = /\$\{\{/;
+const STEP_OUTPUT_EXPRESSION = /^steps\.([A-Za-z_][A-Za-z0-9_-]*)\.outputs\.[A-Za-z_][A-Za-z0-9_-]*$/;
 
 // Setup-action inputs that name a runtime, mapped to the manifest entry that
 // pins it. Adding a runtime to CI means adding it here, so an unpinned one
@@ -59,7 +62,16 @@ function grantsWrite(permissions) {
     .sort();
 }
 
-function problemsForStep(workflowId, jobId, step, manifest) {
+function isExpressionValue(value) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof value.expression === "string"
+  );
+}
+
+function problemsForStep(workflowId, jobId, step, manifest, priorStepIds) {
   const problems = [];
   const label = `${workflowId}/${jobId}/"${step.name}"`;
 
@@ -98,8 +110,25 @@ function problemsForStep(workflowId, jobId, step, manifest) {
   }
 
   for (const [key, value] of Object.entries(step.with ?? {})) {
-    if (WORKFLOW_EXPRESSION.test(value)) {
-      problems.push(`${label}: input "${key}" must not interpolate a workflow expression`);
+    if (typeof value === "string") {
+      if (WORKFLOW_EXPRESSION.test(value)) {
+        problems.push(
+          `${label}: input "${key}" contains a raw workflow expression; use the typed expression form`,
+        );
+      }
+      continue;
+    }
+
+    if (!isExpressionValue(value)) {
+      problems.push(`${label}: input "${key}" is neither a literal nor a typed expression`);
+      continue;
+    }
+
+    const output = STEP_OUTPUT_EXPRESSION.exec(value.expression);
+    if (output !== null && !priorStepIds.has(output[1])) {
+      problems.push(
+        `${label}: input "${key}" references step "${output[1]}" before that step is defined`,
+      );
     }
   }
 
@@ -110,7 +139,7 @@ function problemsForStep(workflowId, jobId, step, manifest) {
     const requested = step.with?.[input];
     const pinned = manifest.entries?.[entryName];
 
-    if (requested === undefined || pinned === undefined) {
+    if (requested === undefined || pinned === undefined || typeof requested !== "string") {
       continue;
     }
 
@@ -161,8 +190,16 @@ export function checkWorkflowPolicy(descriptor, manifest) {
         }
       }
 
+      const stepIds = new Set();
       for (const step of job.steps) {
-        problems.push(...problemsForStep(workflowId, jobId, step, manifest));
+        problems.push(...problemsForStep(workflowId, jobId, step, manifest, stepIds));
+
+        if (step.id !== undefined) {
+          if (stepIds.has(step.id)) {
+            problems.push(`${workflowId}/${jobId}: duplicate step id "${step.id}"`);
+          }
+          stepIds.add(step.id);
+        }
       }
     }
   }
@@ -204,6 +241,15 @@ function renderPermissions(permissions, indent) {
   return lines;
 }
 
+function renderInputValue(value) {
+  if (typeof value === "string") {
+    // JSON strings are valid YAML scalars and provide deterministic escaping.
+    return JSON.stringify(value);
+  }
+
+  return `\${{ ${value.expression} }}`;
+}
+
 export function renderWorkflow(workflow, manifest, descriptorPath) {
   const lines = [
     ...GENERATED_HEADER(descriptorPath),
@@ -240,6 +286,10 @@ export function renderWorkflow(workflow, manifest, descriptorPath) {
     for (const step of job.steps) {
       lines.push(`      - name: ${step.name}`);
 
+      if (step.id !== undefined) {
+        lines.push(`        id: ${step.id}`);
+      }
+
       if (step.kind === "action") {
         const resolved = resolveAction(step.action_ref, manifest);
 
@@ -255,7 +305,7 @@ export function renderWorkflow(workflow, manifest, descriptorPath) {
           lines.push("        with:");
 
           for (const [key, value] of Object.entries(step.with)) {
-            lines.push(`          ${key}: "${value}"`);
+            lines.push(`          ${key}: ${renderInputValue(value)}`);
           }
         }
       } else {
