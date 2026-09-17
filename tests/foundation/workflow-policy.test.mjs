@@ -141,7 +141,20 @@ test("E0-007 a write permission in a pull-request job is rejected", () => {
   const problems = checkWorkflowPolicy(descriptor, PINNED_MANIFEST);
 
   assert.ok(
-    problems.some((problem) => /is write in a pull-request workflow/.test(problem)),
+    problems.some((problem) => /is write in a pull-request or merge-group workflow/.test(problem)),
+  );
+});
+
+test("E0-007 a write permission in a merge-group job is rejected", () => {
+  const descriptor = mutated((d) => {
+    d.workflows.pr.triggers = { merge_group: { branches: ["main"] } };
+    d.workflows.pr.jobs.checks.permissions.contents = "write";
+  });
+
+  const problems = checkWorkflowPolicy(descriptor, PINNED_MANIFEST);
+
+  assert.ok(
+    problems.some((problem) => /is write in a pull-request or merge-group workflow/.test(problem)),
   );
 });
 
