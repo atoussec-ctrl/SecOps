@@ -30,7 +30,10 @@
             {
               "name": "Check out the repository",
               "kind": "action",
-              "action_ref": "actionsCheckout"
+              "action_ref": "actionsCheckout",
+              "with": {
+                "persist-credentials": "false"
+              }
             },
             {
               "name": "Set up the pinned Node runtime",
@@ -120,7 +123,10 @@
             {
               "name": "Check out the repository",
               "kind": "action",
-              "action_ref": "actionsCheckout"
+              "action_ref": "actionsCheckout",
+              "with": {
+                "persist-credentials": "false"
+              }
             },
             {
               "name": "Set up the pinned Node runtime",
